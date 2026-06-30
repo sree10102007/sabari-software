@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retailer Portal - Sivakami Traders</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <img src="../assets/logo.png" alt="ST" class="logo-placeholder" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <span style="display:none;">ST</span>
+        </div>
+        <div>
+          <h1 class="brand-name">Sivakami</h1>
+          <span class="brand-sub">Traders</span>
+        </div>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item active">
+          <a href="retailer-dashboard.html">
+            <span>🏪</span> Retailer Portal
+          </a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <span class="profile-name" id="user-display-name">Loading...</span>
+          <span class="profile-role" id="user-display-role">Retailer</span>
+        </div>
+        <button class="btn-logout" id="logout-button">
+          <span>🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      <header class="content-header">
+        <h2 class="page-title">🏪 Retailer & Customer Order Desk</h2>
+        <div style="font-size: 14px; font-weight: 600; color: var(--cement-dark);" id="current-time-display"></div>
+      </header>
+
+      <div class="content-body">
+        
+        <!-- SPLIT PANEL FOR STOCK DISPLAY & PLACE ORDER -->
+        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-bottom: 32px; align-items: start;">
+          
+          <!-- PRODUCTS STOCK AVAILABILITY TABLE -->
+          <div class="table-container">
+            <div class="table-header">
+              <h3 style="font-family: 'Outfit'; font-size: 16px;">📦 Product Catalog & Stock Status</h3>
+              <span style="font-size: 12px; color: var(--text-muted);">Click a row to select product</span>
+            </div>
+            <table class="data-table" id="retailer-catalog-table">
+              <thead>
+                <tr>
+                  <th>Product / Material</th>
+                  <th>Category</th>
+                  <th>Stock Available</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="catalog-table-body">
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-muted);">Loading catalog...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- PLACE ORDER FORM -->
+          <section class="form-container" style="margin: 0; max-width: 100%;">
+            <h3 style="font-family: 'Outfit'; font-size: 18px; margin-bottom: 20px; color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">Submit Order Request</h3>
+            <form id="retailer-order-form">
+              <div class="form-group">
+                <label for="order-material">Selected Product *</label>
+                <select id="order-material" class="form-control" style="font-weight: 600;" required>
+                  <option value="">-- Choose Product --</option>
+                </select>
+                <span id="stock-availability-label" style="font-size: 12px; margin-top: 4px; font-weight: bold; display: none;"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="order-qty">Order Quantity *</label>
+                <input type="number" id="order-qty" class="form-control" min="0.01" step="any" placeholder="0.00" required>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="customer-name">Retailer / Customer Name *</label>
+                  <input type="text" id="customer-name" class="form-control" placeholder="e.g. Siva Agency" required>
+                </div>
+                <div class="form-group">
+                  <label for="customer-phone">Contact Phone *</label>
+                  <input type="tel" id="customer-phone" class="form-control" placeholder="e.g. 9876543210" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="order-remarks">Delivery Instructions / Remarks</label>
+                <textarea id="order-remarks" class="form-control" style="min-height: 70px;" placeholder="Enter site delivery address or special instructions..."></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 15px;">
+                🛒 Place Order Request
+              </button>
+            </form>
+          </section>
+
+        </div>
+
+        <!-- RETAILER ORDERS HISTORY -->
+        <div class="table-container">
+          <div class="table-header">
+            <h3 style="font-family: 'Outfit'; font-size: 16px;">🔄 My Submitted Order Log</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order Date</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Customer Name</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody id="retailer-history-body">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted);">Loading historical orders...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- NOTIFICATION TOAST -->
+  <div id="toast" class="notification"></div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/retailer.js"></script>
+</body>
+</html>

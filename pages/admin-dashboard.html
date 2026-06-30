@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Sivakami Traders</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <img src="../assets/logo.png" alt="ST" class="logo-placeholder" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <span style="display:none;">ST</span>
+        </div>
+        <div>
+          <h1 class="brand-name">Sivakami</h1>
+          <span class="brand-sub">Traders</span>
+        </div>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item active"><a href="admin-dashboard.html"><span>📊</span> Dashboard</a></li>
+        <li class="menu-item"><a href="materials.html"><span>📦</span> Materials / Products</a></li>
+        <li class="menu-item"><a href="add-stock.html"><span>📥</span> Add Stock</a></li>
+        <li class="menu-item"><a href="stock-out.html"><span>📤</span> Sales</a></li>
+        <li class="menu-item"><a href="customers.html"><span>👥</span> Customers</a></li>
+        <li class="menu-item"><a href="receipts.html"><span>🧾</span> Receipts</a></li>
+        <li class="menu-item"><a href="stock-movements.html"><span>🔄</span> Stock History</a></li>
+        <li class="menu-item"><a href="expenses.html"><span>💸</span> Expenses</a></li>
+        <li class="menu-item"><a href="reports.html"><span>📋</span> Reports</a></li>
+        <li class="menu-item"><a href="settings.html"><span>⚙️</span> Settings / Backup</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <span class="profile-name" id="user-display-name">Loading...</span>
+          <span class="profile-role">Administrator</span>
+        </div>
+        <button class="btn-logout" id="logout-button"><span>🚪</span> Logout</button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <header class="content-header" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <img src="../assets/logo.png" alt="ST" style="height:36px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.1);" onerror="this.style.display='none';">
+          <h2 class="page-title">Admin Dashboard</h2>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--cement-dark);" id="current-time-display"></div>
+      </header>
+
+      <div class="content-body">
+        <!-- STATS CARDS ROW 1 -->
+        <section class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+          <div class="card card-accent-orange">
+            <div><div class="card-title">Cement Bags Available</div><div class="card-value" id="stat-cement-bags">0</div></div>
+            <div class="card-subtitle">📦 Current cement stock</div>
+          </div>
+          <div class="card card-accent-red">
+            <div><div class="card-title">Low Cement Stock Alert</div><div class="card-value text-danger" id="stat-low-cement">0</div></div>
+            <div class="card-subtitle">⚠️ Low cement items</div>
+          </div>
+          <div class="card card-accent-green">
+            <div><div class="card-title">Today's Sales</div><div class="card-value" id="stat-today-sales">₹0.00</div></div>
+            <div class="card-subtitle">📤 Sales generated today</div>
+          </div>
+          <div class="card card-accent-red">
+            <div><div class="card-title">Outstanding Payments</div><div class="card-value text-danger" id="stat-outstanding">₹0.00</div></div>
+            <div class="card-subtitle">⚠️ Total unpaid balance</div>
+          </div>
+          <div class="card card-accent-orange">
+            <div><div class="card-title">Today's Expenses</div><div class="card-value" id="stat-expenses" style="color:var(--text-muted);font-size:20px;font-weight:600;">Coming Soon</div></div>
+            <div class="card-subtitle">💸 Daily business expenses</div>
+          </div>
+          <div class="card card-accent-orange">
+            <div><div class="card-title">Total Receipts Generated</div><div class="card-value" id="stat-receipts-count">0</div></div>
+            <div class="card-subtitle">🧾 Total active sales</div>
+          </div>
+        </section>
+
+        <!-- LOW STOCK ALERT -->
+        <div id="dashboard-alert" style="display:none;padding:16px;margin-bottom:24px;border-radius:var(--border-radius-md);font-weight:600;"></div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="table-container" style="margin-bottom:24px;">
+          <div class="table-header"><h3 style="font-family:'Outfit';font-size:16px;">⚡ Quick Actions</h3></div>
+          <div style="padding:20px;display:flex;flex-wrap:wrap;gap:12px;">
+            <a href="add-stock.html" class="btn btn-success" style="text-decoration:none;">📥 Add Stock</a>
+            <a href="stock-out.html" class="btn btn-primary" style="text-decoration:none;">📤 Sales</a>
+            <a href="materials.html" class="btn btn-secondary" style="text-decoration:none;">📦 Add Material</a>
+            <a href="customers.html" class="btn btn-secondary" style="text-decoration:none;">👥 Add Customer</a>
+            <a href="receipts.html" class="btn btn-secondary" style="text-decoration:none;">🧾 View Receipts</a>
+            <a href="reports.html" class="btn btn-secondary" style="text-decoration:none;">📋 Reports</a>
+          </div>
+        </div>
+
+        <!-- THREE COLUMN LAYOUT -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-bottom:24px;">
+          <!-- RECENT SALES -->
+          <div class="table-container">
+            <div class="table-header">
+              <h3 style="font-family:'Outfit';font-size:16px;">📤 Recent Sales (Latest 5)</h3>
+              <a href="receipts.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">View All</a>
+            </div>
+            <div style="max-height:280px;overflow-y:auto;">
+              <table class="data-table">
+                <thead><tr><th>Receipt No.</th><th>Customer</th><th>Amount</th></tr></thead>
+                <tbody id="recent-sales-body">
+                  <tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Loading sales...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- CEMENT STOCK SUMMARY -->
+          <div class="table-container">
+            <div class="table-header">
+              <h3 style="font-family:'Outfit';font-size:16px;">📦 Cement Stock Summary</h3>
+              <a href="materials.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">View All</a>
+            </div>
+            <div style="max-height:280px;overflow-y:auto;">
+              <table class="data-table">
+                <thead><tr><th>Cement Product</th><th>Stock</th><th>Unit</th></tr></thead>
+                <tbody id="cement-stock-summary-body">
+                  <tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Loading summary...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- LOW STOCK MATERIALS -->
+          <div class="table-container">
+            <div class="table-header">
+              <h3 style="font-family:'Outfit';font-size:16px;">⚠️ Low Stock Materials</h3>
+              <a href="materials.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">View All</a>
+            </div>
+            <div style="max-height:280px;overflow-y:auto;">
+              <table class="data-table">
+                <thead><tr><th>Material</th><th>Current</th><th>Min</th></tr></thead>
+                <tbody id="low-stock-body">
+                  <tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Loading alerts...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT STOCK MOVEMENTS -->
+        <div class="table-container">
+          <div class="table-header">
+            <h3 style="font-family:'Outfit';font-size:16px;">🔄 Recent Stock Movements (Last 10)</h3>
+            <a href="stock-movements.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">View All</a>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Date &amp; Time</th><th>Material</th><th>Type</th><th>Quantity</th><th>Customer / Supplier</th><th>Remarks</th></tr>
+            </thead>
+            <tbody id="recent-movements-table-body">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading recent movements...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="notification"></div>
+  <script src="../js/common.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>

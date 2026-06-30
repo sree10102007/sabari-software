@@ -1,0 +1,30 @@
+{
+  "name": "sivakami-traders-inventory",
+  "version": "1.0.0",
+  "description": "Offline desktop inventory management application for Sivakami Traders",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "keywords": [
+    "electron",
+    "sqlite",
+    "inventory",
+    "sivakami-traders"
+  ],
+  "author": "Naveen",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.8.3",
+    "@electron-forge/maker-squirrel": "^7.8.3",
+    "@electron-forge/maker-zip": "^7.8.3",
+    "electron": "^42.4.1"
+  }
+}

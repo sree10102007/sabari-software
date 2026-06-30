@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Materials - Sivakami Traders</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container"><img src="../assets/logo.png" alt="ST" class="logo-placeholder" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">ST</span></div>
+        <div><h1 class="brand-name">Sivakami</h1><span class="brand-sub">Traders</span></div>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="admin-dashboard.html"><span>📊</span> Dashboard</a></li>
+        <li class="menu-item active"><a href="materials.html"><span>📦</span> Materials / Products</a></li>
+        <li class="menu-item"><a href="add-stock.html"><span>📥</span> Add Stock</a></li>
+        <li class="menu-item"><a href="stock-out.html"><span>📤</span> Sales</a></li>
+        <li class="menu-item"><a href="customers.html"><span>👥</span> Customers</a></li>
+        <li class="menu-item"><a href="receipts.html"><span>🧾</span> Receipts</a></li>
+        <li class="menu-item"><a href="stock-movements.html"><span>🔄</span> Stock History</a></li>
+        <li class="menu-item"><a href="expenses.html"><span>💸</span> Expenses</a></li>
+        <li class="menu-item"><a href="reports.html"><span>📋</span> Reports</a></li>
+        <li class="menu-item"><a href="settings.html"><span>⚙️</span> Settings / Backup</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile"><span class="profile-name" id="user-display-name">Admin</span><span class="profile-role">Administrator</span></div>
+        <button class="btn-logout" id="logout-button"><span>🚪</span> Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="content-header">
+        <h2 class="page-title">📦 Materials / Products</h2>
+        <div style="font-size:13px;color:var(--text-muted);" id="mat-count">Loading...</div>
+      </header>
+
+      <div class="content-body">
+        <!-- ADD MATERIAL FORM -->
+        <div class="table-container" style="margin-bottom:24px;">
+          <div class="table-header">
+            <h3 style="font-family:'Outfit';font-size:16px;">➕ Add New Material</h3>
+            <button class="btn btn-secondary btn-sm" id="toggle-form-btn">Hide Form ▲</button>
+          </div>
+          <div id="add-form-wrapper" style="padding:24px;">
+            <form id="add-material-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="mat-name">Material Name *</label>
+                  <input type="text" id="mat-name" class="form-control" placeholder="e.g., Cement Bag OPC 53" required>
+                </div>
+                <div class="form-group">
+                  <label for="mat-category">Category</label>
+                  <select id="mat-category" class="form-control">
+                    <option value="Cement">Cement</option>
+                    <option value="Raw Materials">Raw Materials</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="mat-unit">Unit *</label>
+                  <input type="text" id="mat-unit" class="form-control" list="unit-list" placeholder="e.g., Bags, Tons, Liters" required>
+                  <datalist id="unit-list">
+                    <option value="Bags"><option value="Tons"><option value="Liters">
+                    <option value="Pcs"><option value="Kg"><option value="Meters">
+                  </datalist>
+                </div>
+                <div class="form-group">
+                  <label for="mat-rate">Rate / Price per Unit (₹)</label>
+                  <input type="number" id="mat-rate" class="form-control" placeholder="0.00" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                  <label for="mat-current">Initial Stock Quantity</label>
+                  <input type="number" id="mat-current" class="form-control" placeholder="0" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                  <label for="mat-minimum">Minimum Stock Level</label>
+                  <input type="number" id="mat-minimum" class="form-control" placeholder="e.g., 50" min="0" step="0.01">
+                </div>
+              </div>
+              <div id="add-mat-alert" style="display:none;padding:10px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
+              <button type="submit" class="btn btn-primary">➕ Add Material</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- MATERIALS TABLE -->
+        <div class="table-container">
+          <div class="table-header">
+            <h3 style="font-family:'Outfit';font-size:16px;">📋 All Materials</h3>
+            <div class="search-bar">
+              <span>🔍</span>
+              <input type="text" id="mat-search" placeholder="Search materials...">
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table" id="materials-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Material Name</th>
+                  <th>Category</th>
+                  <th>Unit</th>
+                  <th>Rate (₹)</th>
+                  <th>Current Stock</th>
+                  <th>Min Stock</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="materials-table-body">
+                <tr><td colspan="9" style="text-align:center;color:var(--text-muted);">Loading materials...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div class="modal-backdrop" id="edit-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>✏️ Edit Material</h3>
+        <button type="button" class="modal-close" id="btn-close-edit">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-material-form">
+          <input type="hidden" id="edit-mat-id">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Material Name *</label>
+              <input type="text" id="edit-mat-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select id="edit-mat-category" class="form-control">
+                <option value="Cement">Cement</option>
+                <option value="Raw Materials">Raw Materials</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Unit *</label>
+              <input type="text" id="edit-mat-unit" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Rate per Unit (₹)</label>
+              <input type="number" id="edit-mat-rate" class="form-control" min="0" step="0.01">
+            </div>
+            <div class="form-group form-group-full">
+              <label>Minimum Stock Level</label>
+              <input type="number" id="edit-mat-minimum" class="form-control" min="0" step="0.01">
+            </div>
+          </div>
+          <div id="edit-mat-alert" style="display:none;padding:10px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
+          <div class="btn-group" style="justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-edit">Cancel</button>
+            <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="notification"></div>
+  <script src="../js/common.js"></script>
+  <script src="../js/materials.js"></script>
+</body>
+</html>

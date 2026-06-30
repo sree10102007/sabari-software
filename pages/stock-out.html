@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Out / Sale - Sivakami Traders</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container"><img src="../assets/logo.png" alt="ST" class="logo-placeholder" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">ST</span></div>
+        <div><h1 class="brand-name">Sivakami</h1><span class="brand-sub">Traders</span></div>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="admin-dashboard.html"><span>📊</span> Dashboard</a></li>
+        <li class="menu-item"><a href="materials.html"><span>📦</span> Materials / Products</a></li>
+        <li class="menu-item"><a href="add-stock.html"><span>📥</span> Add Stock</a></li>
+        <li class="menu-item active"><a href="stock-out.html"><span>📤</span> Sales</a></li>
+        <li class="menu-item"><a href="customers.html"><span>👥</span> Customers</a></li>
+        <li class="menu-item"><a href="receipts.html"><span>🧾</span> Receipts</a></li>
+        <li class="menu-item"><a href="stock-movements.html"><span>🔄</span> Stock History</a></li>
+        <li class="menu-item"><a href="expenses.html"><span>💸</span> Expenses</a></li>
+        <li class="menu-item"><a href="reports.html"><span>📋</span> Reports</a></li>
+        <li class="menu-item"><a href="settings.html"><span>⚙️</span> Settings / Backup</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile"><span class="profile-name" id="user-display-name">Admin</span><span class="profile-role">Administrator</span></div>
+        <button class="btn-logout" id="logout-button"><span>🚪</span> Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="content-header">
+        <h2 class="page-title">📤 Stock Out / Sale</h2>
+        <div style="font-size:13px;color:var(--text-muted);">Record stock sale or usage</div>
+      </header>
+
+      <div class="content-body">
+        <div class="grid-stock-out">
+          <!-- STOCK OUT FORM -->
+          <div class="table-container">
+            <div class="table-header"><h3 style="font-family:'Outfit';font-size:16px;">📤 Stock Out Form</h3></div>
+            <div style="padding:24px;">
+              <form id="stock-out-form">
+                <!-- MATERIAL SECTION -->
+                <div style="background:var(--bg-primary);border-radius:var(--border-radius-md);padding:16px;margin-bottom:20px;border:1px solid var(--border-color);">
+                  <h4 style="font-family:'Outfit';font-size:14px;margin-bottom:12px;color:var(--cement-dark);">📦 Material Details</h4>
+                  <div class="form-grid" style="gap:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Select Material *</label>
+                      <select id="out-material" class="form-control" required>
+                        <option value="">-- Select Material --</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Available Stock</label>
+                      <div id="avail-stock-box" style="padding:10px 14px;background:var(--bg-secondary);border:2px solid var(--border-color);border-radius:var(--border-radius-md);font-size:18px;font-weight:700;color:var(--text-muted);">—</div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Quantity *</label>
+                      <input type="number" id="out-qty" class="form-control" placeholder="0" min="0.01" step="0.01" required>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CUSTOMER SECTION -->
+                <div style="background:var(--bg-primary);border-radius:var(--border-radius-md);padding:16px;margin-bottom:20px;border:1px solid var(--border-color);">
+                  <h4 style="font-family:'Outfit';font-size:14px;margin-bottom:12px;color:var(--cement-dark);">👤 Customer Details</h4>
+                  <div class="form-group" style="margin-bottom:12px;">
+                    <label>Customer Name *</label>
+                    <input type="text" id="out-cust-name" class="form-control" placeholder="Enter customer name" required list="existing-customers">
+                    <datalist id="existing-customers"></datalist>
+                  </div>
+                  <div class="form-grid" style="gap:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Phone Number</label>
+                      <input type="tel" id="out-cust-phone" class="form-control" placeholder="+91 XXXXX XXXXX">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Address</label>
+                      <input type="text" id="out-cust-address" class="form-control" placeholder="Customer address">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Sale Type *</label>
+                      <select id="out-sale-type" class="form-control" required>
+                        <option value="Customer Sale">Customer Sale</option>
+                        <option value="Site Usage">Site Usage</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- PAYMENT SECTION -->
+                <div style="background:var(--bg-primary);border-radius:var(--border-radius-md);padding:16px;margin-bottom:20px;border:1px solid var(--border-color);">
+                  <h4 style="font-family:'Outfit';font-size:14px;margin-bottom:12px;color:var(--cement-dark);">💰 Payment Details</h4>
+                  <div class="form-grid" style="gap:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Rate per Unit (₹)</label>
+                      <input type="number" id="out-rate" class="form-control" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Total Amount (₹)</label>
+                      <input type="number" id="out-total" class="form-control" placeholder="Auto-calculated" min="0" step="0.01" readonly style="background:#f9f9f9;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Paid Amount (₹)</label>
+                      <input type="number" id="out-paid" class="form-control" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>Balance Amount (₹)</label>
+                      <input type="number" id="out-balance" class="form-control" readonly style="background:#f9f9f9;font-weight:700;">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- DATE & REMARKS -->
+                <div class="form-grid" style="gap:12px;margin-bottom:20px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label>Date</label>
+                    <input type="date" id="out-date" class="form-control">
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label>Remarks</label>
+                    <input type="text" id="out-remarks" class="form-control" placeholder="Any notes...">
+                  </div>
+                </div>
+
+                <div id="out-alert" style="display:none;padding:12px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
+                <button type="submit" class="btn btn-primary" style="width:100%;padding:16px;font-size:16px;">📤 Submit Stock Out</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- RECENT STOCK OUT -->
+          <div class="table-container">
+            <div class="table-header"><h3 style="font-family:'Outfit';font-size:16px;">📋 Recent Sales / Usage</h3></div>
+            <div style="max-height:600px;overflow-y:auto;">
+              <table class="data-table">
+                <thead><tr><th>Date</th><th>Material</th><th>Qty</th><th>Customer</th><th>Amount</th></tr></thead>
+                <tbody id="recent-stock-out-body">
+                  <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- RECEIPT SUCCESS MODAL -->
+  <div class="modal-backdrop" id="receipt-modal">
+    <div class="modal-content" style="max-width:460px;">
+      <div class="modal-header" style="background:var(--success-bg);">
+        <h3 style="color:var(--success-color);">✅ Stock Out Successful!</h3>
+        <button type="button" class="modal-close" id="btn-close-receipt-modal">×</button>
+      </div>
+      <div class="modal-body" style="text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">🧾</div>
+        <p style="font-size:16px;font-weight:700;margin-bottom:4px;" id="receipt-num-display"></p>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px;">Receipt created successfully. What would you like to do?</p>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;" id="btn-view-receipt">👁️ View Receipt</button>
+          <button class="btn btn-success" style="width:100%;padding:14px;font-size:15px;" id="btn-whatsapp">💬 Send via WhatsApp</button>
+          <button class="btn btn-secondary" id="btn-view-all-receipts" style="width:100%;padding:14px;">🧾 View All Receipts</button>
+          <button type="button" class="btn" id="btn-close-receipt-modal-bottom" style="background:var(--bg-primary);color:var(--text-muted);width:100%;padding:10px;">Close</button>
+        </div>
+        <div id="pdf-path-display" style="display:none;margin-top:16px;background:var(--bg-primary);border-radius:var(--border-radius-md);padding:12px;text-align:left;font-size:12px;word-break:break-all;color:var(--text-muted);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="notification"></div>
+  <script src="../js/common.js"></script>
+  <script src="../js/stock-out.js"></script>
+</body>
+</html>

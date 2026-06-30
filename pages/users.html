@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management - Sivakami Traders</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <img src="../assets/logo.png" alt="ST" class="logo-placeholder" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <span style="display:none;">ST</span>
+        </div>
+        <div>
+          <h1 class="brand-name">Sivakami</h1>
+          <span class="brand-sub">Traders</span>
+        </div>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="admin-dashboard.html"><span>📊</span> Dashboard</a></li>
+        <li class="menu-item"><a href="materials.html"><span>📦</span> Materials / Products</a></li>
+        <li class="menu-item"><a href="add-stock.html"><span>📥</span> Add Stock</a></li>
+        <li class="menu-item"><a href="stock-out.html"><span>📤</span> Sales</a></li>
+        <li class="menu-item"><a href="customers.html"><span>👥</span> Customers</a></li>
+        <li class="menu-item"><a href="receipts.html"><span>🧾</span> Receipts</a></li>
+        <li class="menu-item"><a href="stock-movements.html"><span>🔄</span> Stock History</a></li>
+        <li class="menu-item"><a href="expenses.html"><span>💸</span> Expenses</a></li>
+        <li class="menu-item"><a href="reports.html"><span>📋</span> Reports</a></li>
+        <li class="menu-item"><a href="settings.html"><span>⚙️</span> Settings / Backup</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <span class="profile-name" id="user-display-name">Loading...</span>
+          <span class="profile-role" id="user-display-role">Administrator</span>
+        </div>
+        <button class="btn-logout" id="logout-button">
+          <span>🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      <header class="content-header">
+        <h2 class="page-title">👥 User Accounts & Access Controls</h2>
+      </header>
+
+      <div class="content-body">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px; align-items: start;">
+          
+          <!-- ADD USER FORM -->
+          <section class="form-container" style="margin: 0; max-width: 100%;">
+            <h3 style="font-family: 'Outfit'; font-size: 18px; margin-bottom: 20px; color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">Create New User Account</h3>
+            
+            <form id="add-user-form">
+              <div class="form-group">
+                <label for="new-user-name">Full Name *</label>
+                <input type="text" id="new-user-name" class="form-control" placeholder="e.g. Ramesh Kumar" required>
+              </div>
+
+              <div class="form-group">
+                <label for="new-user-username">Username *</label>
+                <input type="text" id="new-user-username" class="form-control" placeholder="e.g. ramesh_k" required autocomplete="username">
+              </div>
+
+              <div class="form-group">
+                <label for="new-user-password">Password *</label>
+                <input type="password" id="new-user-password" class="form-control" placeholder="Enter secure password" required autocomplete="new-password">
+              </div>
+
+              <div class="form-group">
+                <label for="new-user-role">System Role *</label>
+                <select id="new-user-role" class="form-control" required>
+                  <option value="admin">System Administrator (Admin)</option>
+                  <option value="engineer">Site Engineer</option>
+                  <option value="retailer">Retail Dealer / Customer</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 15px; font-weight: bold;">
+                💾 Save User Account
+              </button>
+            </form>
+          </section>
+
+          <!-- USERS REGISTER TABLE -->
+          <div class="table-container">
+            <div class="table-header">
+              <h3 style="font-family: 'Outfit'; font-size: 16px;">👤 Active System Users</h3>
+            </div>
+            <table class="data-table" id="users-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Full Name</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body">
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-muted);">Loading active users...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- NOTIFICATION TOAST -->
+  <div id="toast" class="notification"></div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/users.js"></script>
+</body>
+</html>

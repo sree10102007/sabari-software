@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# SQLite database file (auto-generated at runtime)
+database/sivakami_traders.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Receipt PDFs / generated customer documents
+receipts/
+receipts/*.pdf
+
+# Electron build output
+dist/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+testsprite_tests\tmp\config.json
