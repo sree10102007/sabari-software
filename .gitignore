@@ -15,14 +15,67 @@ receipts/*.pdf
 dist/
 out/
 
-# Logs
-*.log
-npm-debug.log*
-
 # OS files
 .DS_Store
 Thumbs.db
 
 # Environment
 .env
+.env.*
+!.env.example
 testsprite_tests\tmp\config.json
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Compiled addons
+build/Release
+
+# TS cache
+*.tsbuildinfo
+
+# ESLint/Stylelint cache
+.eslintcache
+.stylelintcache
+
+# REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Next/Nuxt build output
+.next
+.nuxt
+.output
+
+# Vite/Parcel cache
+.cache
+.parcel-cache
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
