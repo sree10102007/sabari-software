@@ -1,54 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Sivakami Traders</title>
-  <link rel="stylesheet" href="../css/style.css">
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Login - Sivakami Traders</title>
+ <link rel="stylesheet" href="../css/style.css">
 </head>
 <body class="login-body">
-  <div class="login-wrapper">
-    <div class="login-card">
-      <div class="login-header">
-        <div class="login-logo">
-          <div id="logo-wrapper" style="display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
-            <img src="../assets/logo.png" alt="Sivakami Traders" id="main-logo"
-              style="max-height:70px;display:none;"
-              onload="this.style.display='block';document.getElementById('logo-fallback').style.display='none';"
-              onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex';">
-            <div id="logo-fallback" style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-              <div style="width:72px;height:72px;background:var(--primary-color);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;font-weight:900;font-family:'Outfit',sans-serif;box-shadow:0 4px 20px rgba(255,111,0,0.4);">ST</div>
-            </div>
-          </div>
-        </div>
-        <h1 style="font-size:24px;font-weight:800;color:var(--text-main);font-family:'Outfit',sans-serif;margin-bottom:4px;">Sivakami Traders</h1>
-        <p class="login-subtitle">Cement &amp; Raw Materials Inventory</p>
-        <p style="font-size:12px;color:var(--cement-grey);margin-top:4px;">Admin Control Panel</p>
-      </div>
+ <div class="login-wrapper">
+ <div class="login-card">
+ <div class="login-header">
+ <div class="login-logo">
+ <div id="logo-wrapper" style="display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+ <img src="../assets/logo.png" alt="Sivakami Traders" id="main-logo"
+ style="max-height:70px;display:none;"
+ onload="this.style.display='block';document.getElementById('logo-fallback').style.display='none';"
+ onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex';">
+ <div id="logo-fallback" style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+ <div style="width:72px;height:72px;background:var(--primary-color);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;font-weight:900;font-family:'Outfit',sans-serif;box-shadow:0 4px 20px rgba(255,111,0,0.4);">ST</div>
+ </div>
+ </div>
+ </div>
+ <h1 style="font-size:24px;font-weight:800;color:var(--text-main);font-family:'Outfit',sans-serif;margin-bottom:4px;">Sivakami Traders</h1>
+ <p class="login-subtitle">Cement &amp; Raw Materials Inventory</p>
+ <p style="font-size:12px;color:var(--cement-grey);margin-top:4px;">Admin Control Panel</p>
+ </div>
 
-      <div id="alert-box" style="display:none;padding:12px;margin-bottom:16px;border-radius:var(--border-radius-md);background-color:var(--danger-bg);color:var(--danger-color);font-size:13px;font-weight:600;text-align:center;border:1px solid rgba(198,40,40,0.2);"></div>
+ <div id="alert-box" style="display:none;padding:12px;margin-bottom:16px;border-radius:var(--border-radius-md);background-color:var(--danger-bg);color:var(--danger-color);font-size:13px;font-weight:600;text-align:center;border:1px solid rgba(198,40,40,0.2);"></div>
 
-      <form id="login-form">
-        <div class="form-group">
-          <label for="username">👤 Username</label>
-          <input type="text" id="username" class="form-control" placeholder="Enter admin username" required autocomplete="username">
-        </div>
-        <div class="form-group">
-          <label for="password">🔒 Password</label>
-          <input type="password" id="password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
-        </div>
-        <button type="submit" id="login-btn" class="btn btn-primary" style="width:100%;margin-top:10px;padding:16px;font-size:16px;letter-spacing:0.5px;">
-          🚀 Sign In to Admin Panel
-        </button>
-      </form>
+ <form id="login-form">
+ <div class="form-group">
+ <label for="username"> Username</label>
+ <input type="text" id="username" class="form-control" placeholder="Enter admin username" required autocomplete="username">
+ </div>
+ <div class="form-group">
+ <label for="password"> Password</label>
+ <input type="password" id="password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+ </div>
+ <button type="submit" id="login-btn" class="btn btn-primary" style="width:100%;margin-top:10px;padding:16px;font-size:16px;letter-spacing:0.5px;">
+ Sign In to Admin Panel
+ </button>
+ </form>
 
-      <div style="margin-top:20px;padding:12px;background:var(--bg-primary);border-radius:var(--border-radius-md);border:1px solid var(--border-color);text-align:center;font-size:12px;color:var(--text-muted);">
-        <p style="font-weight:600;margin-bottom:4px;">Default Credentials</p>
-        <p>Username: <strong>admin</strong> &nbsp;|&nbsp; Password: <strong>admin123</strong></p>
-      </div>
-    </div>
-  </div>
+ <div style="margin-top:20px;padding:12px;background:var(--bg-primary);border-radius:var(--border-radius-md);border:1px solid var(--border-color);text-align:center;font-size:12px;color:var(--text-muted);">
+ <p style="font-weight:600;margin-bottom:4px;">Default Credentials</p>
+ <p>Username: <strong>admin</strong> &nbsp;|&nbsp; Password: <strong>admin123</strong></p>
+ </div>
+ </div>
+ </div>
 
-  <script src="../js/login.js"></script>
+ <script src="../js/login.js"></script>
 </body>
 </html>

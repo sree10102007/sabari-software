@@ -1,160 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Customers - Sivakami Traders</title>
-  <link rel="stylesheet" href="../css/style.css">
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Customers - Sivakami Traders</title>
+ <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-  <div class="app-container">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-container"><img src="../assets/logo.png" alt="ST" class="logo-placeholder" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">ST</span></div>
-        <div><h1 class="brand-name">Sivakami</h1><span class="brand-sub">Traders</span></div>
-      </div>
-      <ul class="sidebar-menu">
-        <li class="menu-item"><a href="admin-dashboard.html"><span>📊</span> Dashboard</a></li>
-        <li class="menu-item"><a href="materials.html"><span>📦</span> Materials / Products</a></li>
-        <li class="menu-item"><a href="add-stock.html"><span>📥</span> Add Stock</a></li>
-        <li class="menu-item"><a href="stock-out.html"><span>📤</span> Sales</a></li>
-        <li class="menu-item active"><a href="customers.html"><span>👥</span> Customers</a></li>
-        <li class="menu-item"><a href="receipts.html"><span>🧾</span> Receipts</a></li>
-        <li class="menu-item"><a href="stock-movements.html"><span>🔄</span> Stock History</a></li>
-        <li class="menu-item"><a href="expenses.html"><span>💸</span> Expenses</a></li>
-        <li class="menu-item"><a href="reports.html"><span>📋</span> Reports</a></li>
-        <li class="menu-item"><a href="settings.html"><span>⚙️</span> Settings / Backup</a></li>
-      </ul>
-      <div class="sidebar-footer">
-        <div class="user-profile"><span class="profile-name" id="user-display-name">Admin</span><span class="profile-role">Administrator</span></div>
-        <button class="btn-logout" id="logout-button"><span>🚪</span> Logout</button>
-      </div>
-    </aside>
+ <div class="app-container">
+ <aside class="sidebar">
+ <div class="sidebar-header">
+ <div class="logo-container"><img src="../assets/logo.png" alt="ST" class="logo-placeholder" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">ST</span></div>
+ <div><h1 class="brand-name">Sivakami</h1><span class="brand-sub">Traders</span></div>
+ </div>
+ <ul class="sidebar-menu">
+ <li class="menu-item"><a href="admin-dashboard.html">Dashboard</a></li>
+ <li class="menu-item"><a href="materials.html">Products</a></li>
+ <li class="menu-item"><a href="add-stock.html">Add Stock</a></li>
+ <li class="menu-item"><a href="stock-out.html">Sales</a></li>
+ <li class="menu-item active"><a href="customers.html">Customers</a></li>
+ <li class="menu-item"><a href="receipts.html">Receipts</a></li>
+ <li class="menu-item"><a href="reports.html">Reports</a></li>
+ <li class="menu-item"><a href="settings.html">Settings</a></li>
+ </ul>
+ <div class="sidebar-footer">
+ <div class="user-profile"><span class="profile-name" id="user-display-name">Admin</span><span class="profile-role">Administrator</span></div>
+ <button class="btn-logout" id="logout-button">Logout</button>
+ </div>
+ </aside>
 
-    <main class="main-content">
-      <header class="content-header">
-        <h2 class="page-title">👥 Customers</h2>
-        <div style="font-size:13px;color:var(--text-muted);" id="cust-count">Loading...</div>
-      </header>
+ <main class="main-content">
+ <header class="content-header">
+ <h2 class="page-title"> Customers</h2>
+ <div style="font-size:13px;color:var(--text-muted);" id="cust-count">Loading...</div>
+ </header>
 
-      <div class="content-body">
-        <div class="grid-customer">
-          <!-- ADD CUSTOMER FORM -->
-          <div class="table-container">
-            <div class="table-header"><h3 style="font-family:'Outfit';font-size:16px;">➕ Add New Customer</h3></div>
-            <div style="padding:20px;">
-              <form id="add-customer-form">
-                <div class="form-group">
-                  <label>Customer Name *</label>
-                  <input type="text" id="cust-name" class="form-control" placeholder="Full name" required>
-                </div>
-                <div class="form-group">
-                  <label>Customer Type *</label>
-                  <select id="cust-type" class="form-control">
-                    <option value="Direct Customer">Direct Customer</option>
-                    <option value="Engineer">Engineer</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Phone Number</label>
-                  <input type="tel" id="cust-phone" class="form-control" placeholder="+91 XXXXX XXXXX">
-                </div>
-                <div class="form-group">
-                  <label>Address</label>
-                  <textarea id="cust-address" class="form-control" placeholder="Full address..." style="min-height:80px;"></textarea>
-                </div>
-                <div id="add-cust-alert" style="display:none;padding:10px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
-                <button type="submit" class="btn btn-primary" style="width:100%;">➕ Add Customer</button>
-              </form>
-            </div>
-          </div>
-
-          <!-- CUSTOMERS TABLE -->
-          <div class="table-container">
-            <div class="table-header">
-              <h3 style="font-family:'Outfit';font-size:16px;">📋 Customers</h3>
-              <div style="display:flex; gap:6px;" id="cust-filter-tabs">
-                <button type="button" class="btn btn-primary btn-sm filter-tab" data-type="All">All</button>
-                <button type="button" class="btn btn-secondary btn-sm filter-tab" data-type="Direct Customer">Direct</button>
-                <button type="button" class="btn btn-secondary btn-sm filter-tab" data-type="Engineer">Engineers</button>
-              </div>
-              <div class="search-bar">
-                <span>🔍</span>
-                <input type="text" id="cust-search" placeholder="Search by name or phone...">
-              </div>
-            </div>
-            <div style="overflow-x:auto;max-height:calc(100vh - 280px);overflow-y:auto;">
-              <table class="data-table" id="customers-table">
-                <thead>
-                  <tr><th>#</th><th>Name</th><th>Type</th><th>Phone</th><th>Address</th><th>Total Purchases</th><th>Balance</th><th>Actions</th></tr>
-                </thead>
-                <tbody id="customers-table-body">
-                  <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading customers...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
+ <div class="content-body">
+ <div class="flex-column-layout">
+ <!-- ADD CUSTOMER FORM -->
+ <div class="table-container">
+ <div class="table-header"><h3 style="font-family:'Outfit';font-size:16px;"> Add New Customer</h3></div>
+ <div style="padding:20px;">
+ <form id="add-customer-form">
+ <div class="form-group">
+ <label>Customer Name *</label>
+ <input type="text" id="cust-name" class="form-control" placeholder="Full name" required>
+ </div>
+ <div class="form-group">
+  <label>Customer Type *</label>
+  <select id="cust-type" class="form-control" required>
+  <option value="">-- Select Customer Type --</option>
+  <option value="Retailer">Retailer</option>
+  <option value="Engineer">Engineer</option>
+  </select>
   </div>
+ <div class="form-group">
+ <label>Phone Number</label>
+ <input type="tel" id="cust-phone" class="form-control" placeholder="+91 XXXXX XXXXX">
+ </div>
+ <div class="form-group">
+ <label>Address</label>
+ <textarea id="cust-address" class="form-control" placeholder="Full address..." style="min-height:80px;"></textarea>
+ </div>
+ <div id="add-cust-alert" style="display:none;padding:10px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
+ <button type="submit" class="btn btn-primary" style="width:100%;"> Add Customer</button>
+ </form>
+ </div>
+ </div>
 
-  <!-- CUSTOMER HISTORY MODAL -->
-  <!-- CUSTOMER HISTORY MODAL -->
-  <div class="modal-backdrop" id="history-modal">
-    <div class="modal-content" style="max-width:700px;">
-      <div class="modal-header">
-        <h3 id="history-modal-title">📜 Customer History</h3>
-        <button type="button" class="modal-close" id="btn-close-history">×</button>
-      </div>
-      <div class="modal-body">
-        <div id="history-modal-body" style="max-height:400px;overflow-y:auto;">
-          <table class="data-table">
-            <thead><tr><th>Receipt No.</th><th>Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Materials</th></tr></thead>
-            <tbody id="history-table-body">
-              <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="btn-group" style="justify-content:flex-end;margin-top:16px;">
-          <button type="button" class="btn btn-secondary" id="btn-cancel-history">Close</button>
-        </div>
-      </div>
-    </div>
+ <!-- CUSTOMERS TABLE -->
+ <div class="table-container">
+ <div class="table-header">
+ <h3 style="font-family:'Outfit';font-size:16px;"> Customers</h3>
+ <div style="display:flex; gap:6px;" id="cust-filter-tabs">
+  <button type="button" class="btn btn-primary btn-sm filter-tab" data-type="All">All</button>
+  <button type="button" class="btn btn-secondary btn-sm filter-tab" data-type="Retailer">Retailer</button>
+  <button type="button" class="btn btn-secondary btn-sm filter-tab" data-type="Engineer">Engineer</button>
   </div>
+ <div class="search-bar">
+ <input type="text" id="cust-search" placeholder="Search by name or phone...">
+ </div>
+ </div>
+ <div style="overflow-x:auto;max-height:calc(100vh - 280px);overflow-y:auto;">
+ <table class="data-table" id="customers-table">
+ <thead>
+ <tr><th>#</th><th>Name</th><th>Type</th><th>Phone</th><th>Address</th><th>Total Purchases</th><th>Balance</th><th class="actions-col">Actions</th></tr>
+ </thead>
+ <tbody id="customers-table-body">
+ <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading customers...</td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ </div>
+ </main>
+ </div>
 
-  <!-- EDIT CUSTOMER MODAL -->
-  <div class="modal-backdrop" id="edit-cust-modal">
-    <div class="modal-content" style="max-width:440px;">
-      <div class="modal-header">
-        <h3>✏️ Edit Customer</h3>
-        <button type="button" class="modal-close" id="btn-close-edit-cust">×</button>
-      </div>
-      <div class="modal-body">
-        <form id="edit-customer-form">
-          <input type="hidden" id="edit-cust-id">
-          <div class="form-group"><label>Customer Name *</label><input type="text" id="edit-cust-name" class="form-control" required></div>
-          <div class="form-group">
-            <label>Customer Type *</label>
-            <select id="edit-cust-type" class="form-control">
-              <option value="Direct Customer">Direct Customer</option>
-              <option value="Engineer">Engineer</option>
-            </select>
-          </div>
-          <div class="form-group"><label>Phone Number</label><input type="tel" id="edit-cust-phone" class="form-control"></div>
-          <div class="form-group"><label>Address</label><textarea id="edit-cust-address" class="form-control" style="min-height:80px;"></textarea></div>
-          <div id="edit-cust-alert" style="display:none;padding:10px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
-          <div class="btn-group" style="justify-content:flex-end;">
-            <button type="button" class="btn btn-secondary" id="btn-cancel-edit-cust">Cancel</button>
-            <button type="submit" class="btn btn-primary">💾 Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
+ <!-- CUSTOMER HISTORY MODAL -->
+ <!-- CUSTOMER HISTORY MODAL -->
+ <div class="modal-backdrop" id="history-modal">
+ <div class="modal-content" style="max-width:700px;">
+ <div class="modal-header">
+ <h3 id="history-modal-title"> Customer History</h3>
+ <button type="button" class="modal-close" id="btn-close-history">×</button>
+ </div>
+ <div class="modal-body">
+ <div id="history-modal-body" style="max-height:400px;overflow-y:auto;">
+ <table class="data-table">
+ <thead><tr><th>Receipt No.</th><th>Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Materials</th></tr></thead>
+ <tbody id="history-table-body">
+ <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
+ </tbody>
+ </table>
+ </div>
+ <div class="btn-group" style="justify-content:flex-end;margin-top:16px;">
+ <button type="button" class="btn btn-secondary" id="btn-cancel-history">Close</button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- EDIT CUSTOMER MODAL -->
+ <div class="modal-backdrop" id="edit-cust-modal">
+ <div class="modal-content" style="max-width:440px;">
+ <div class="modal-header">
+ <h3> Edit Customer</h3>
+ <button type="button" class="modal-close" id="btn-close-edit-cust">×</button>
+ </div>
+ <div class="modal-body">
+ <form id="edit-customer-form">
+ <input type="hidden" id="edit-cust-id">
+ <div class="form-group"><label>Customer Name *</label><input type="text" id="edit-cust-name" class="form-control" required></div>
+ <div class="form-group">
+  <label>Customer Type *</label>
+  <select id="edit-cust-type" class="form-control" required>
+  <option value="">-- Select Customer Type --</option>
+  <option value="Retailer">Retailer</option>
+  <option value="Engineer">Engineer</option>
+  </select>
   </div>
+ <div class="form-group"><label>Phone Number</label><input type="tel" id="edit-cust-phone" class="form-control"></div>
+ <div class="form-group"><label>Address</label><textarea id="edit-cust-address" class="form-control" style="min-height:80px;"></textarea></div>
+ <div id="edit-cust-alert" style="display:none;padding:10px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
+ <div class="btn-group" style="justify-content:flex-end;">
+ <button type="button" class="btn btn-secondary" id="btn-cancel-edit-cust">Cancel</button>
+ <button type="submit" class="btn btn-primary"> Save</button>
+ </div>
+ </form>
+ </div>
+ </div>
+ </div>
 
-  <div id="toast" class="notification"></div>
-  <script src="../js/common.js"></script>
-  <script src="../js/customers.js"></script>
+ <div id="toast" class="notification"></div>
+ <script src="../js/common.js"></script>
+ <script src="../js/customers.js"></script>
 </body>
 </html>

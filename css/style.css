@@ -443,11 +443,21 @@ h1, h2, h3, h4, .brand-logo {
 }
 
 .data-table td {
-  padding: 16px 24px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
   font-size: 14px;
   color: var(--text-main);
   vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Actions column — ensure buttons always stay horizontal */
+.data-table th.actions-col,
+.data-table td.actions-col {
+  min-width: 280px;
+  white-space: nowrap;
+  vertical-align: middle;
+  padding: 8px 12px;
 }
 
 .data-table tr:last-child td {
@@ -967,5 +977,409 @@ textarea.form-control {
   
   .btn-group {
     flex-direction: column;
+}
+
+/* Appended responsive layout utilities */
+.flex-column-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.flex-column-layout > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+.grid-three-responsive {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--border-radius-md);
+  transition: var(--transition);
+}
+
+.tab-btn:hover {
+  background-color: var(--border-color);
+  color: var(--text-main);
+}
+
+.tab-btn.active {
+  background-color: var(--cement-dark);
+  color: white;
+}
+
+.report-controls {
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+/* Print Styling */
+@media print {
+  body {
+    background-color: white;
+    color: black;
   }
+  .sidebar, .report-controls, .report-tabs, .btn {
+    display: none !important;
+  }
+  .main-content {
+    width: 100% !important;
+  }
+  .content-body {
+    padding: 0 !important;
+  }
+  .table-container {
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+/* Responsive Layout Utilities */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.grid-two-equal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.grid-customer {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.grid-stock-out {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Media Queries */
+@media (max-width: 1100px) {
+  .grid-two-equal,
+  .grid-customer,
+  .grid-stock-out {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    overflow: auto;
+    height: auto;
+  }
+  
+  .app-container {
+    flex-direction: column;
+    height: auto;
+    width: 100%;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .sidebar-header {
+    padding: 16px;
+    justify-content: center;
+  }
+
+  .sidebar-menu {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 10px;
+    gap: 8px;
+    flex-grow: 0;
+  }
+
+  .sidebar-menu li a {
+    white-space: nowrap;
+    padding: 8px 12px;
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
+
+  .main-content {
+    height: auto;
+    overflow: visible;
+  }
+
+  .content-header {
+    padding: 16px;
+    height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .content-body {
+    padding: 16px;
+    overflow-y: visible;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group-full {
+    grid-column: span 1;
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .search-bar {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+}
+}
+
+/* Appended responsive layout utilities */
+.flex-column-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.flex-column-layout > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+.grid-three-responsive {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1100px) {
+  .grid-three-responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Actions column — ensure buttons always stay horizontal */
+.data-table th.actions-col,
+.data-table td.actions-col {
+  min-width: 280px;
+  white-space: nowrap;
+  vertical-align: middle;
+  padding: 8px 12px;
+}
+
+/* =============================================================
+   HOVER-ONLY ACTION BUTTON SYSTEM  (btn-action / action-btn)
+   Neutral by default — color appears only on hover
+   ============================================================= */
+
+/* Table wrapper enables horizontal scroll when table is wide */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* Reset browser button default that causes vertical stacking */
+.table-actions button,
+.table-actions a {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn.btn-action,
+.btn-action,
+.action-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 7px !important;
+  padding: 5px 10px !important;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease !important;
+  text-decoration: none !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.15px;
+  user-select: none;
+  /* Override browser default button styles */
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+}
+
+.btn.btn-action:hover,
+.btn-action:hover,
+.action-btn:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+}
+
+.btn.btn-action:active,
+.btn-action:active,
+.action-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn.btn-action:focus,
+.btn-action:focus,
+.action-btn:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.3) !important;
+  outline-offset: 2px;
+}
+
+/* View → Blue on hover */
+.action-btn.view:hover,
+.btn-view:hover {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Edit → Amber on hover */
+.action-btn.edit:hover,
+.btn-edit:hover {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+  color: #ffffff !important;
+}
+
+/* Delete → Red on hover */
+.action-btn.delete:hover,
+.btn-delete:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+/* Payment → Purple on hover */
+.action-btn.payment:hover,
+.btn-payment:hover {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+/* WhatsApp → Green on hover */
+.action-btn.whatsapp:hover,
+.btn-whatsapp:hover {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+/* History → Dark slate on hover */
+.action-btn.history:hover,
+.btn-history:hover {
+  background: #334155 !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* Download/PDF → Teal on hover */
+.action-btn.download:hover,
+.btn-download:hover,
+.btn-pdf:hover {
+  background: #0891b2 !important;
+  border-color: #0891b2 !important;
+  color: #ffffff !important;
+}
+
+/* Sale → Orange on hover (matches brand) */
+.action-btn.sale:hover,
+.btn-sale:hover {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+/* Add Stock → Green on hover */
+.action-btn.add-stock:hover,
+.btn-add-stock:hover {
+  background: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+/* Paid amount error state */
+.field-error {
+  border-color: var(--danger-color) !important;
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.18) !important;
+}
+
+.inline-error-msg {
+  color: var(--danger-color);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+  display: none;
+}
+
+.inline-error-msg.show {
+  display: block;
+}
+
+/* notification pending color */
+.notification.pending {
+  background-color: #1565c0;
 }

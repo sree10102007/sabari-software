@@ -1,212 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Settings & Backup - Sivakami Traders</title>
-  <link rel="stylesheet" href="../css/style.css">
-  <style>
-    .health-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-    .health-badge.healthy {
-      background-color: var(--success-bg);
-      color: var(--success-color);
-      border: 1px solid rgba(46,125,50,0.2);
-    }
-    .health-badge.warning {
-      background-color: var(--warning-bg);
-      color: var(--warning-color);
-      border: 1px solid rgba(245,127,23,0.2);
-    }
-    .health-badge.danger {
-      background-color: var(--danger-bg);
-      color: var(--danger-color);
-      border: 1px solid rgba(198,40,40,0.2);
-    }
-  </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Settings & Backup - Sivakami Traders</title>
+ <link rel="stylesheet" href="../css/style.css">
+ <style>
+ .health-badge {
+ display: inline-block;
+ padding: 4px 8px;
+ border-radius: 4px;
+ font-size: 12px;
+ font-weight: bold;
+ }
+ .health-badge.healthy {
+ background-color: var(--success-bg);
+ color: var(--success-color);
+ border: 1px solid rgba(46,125,50,0.2);
+ }
+ .health-badge.warning {
+ background-color: var(--warning-bg);
+ color: var(--warning-color);
+ border: 1px solid rgba(245,127,23,0.2);
+ }
+ .health-badge.danger {
+ background-color: var(--danger-bg);
+ color: var(--danger-color);
+ border: 1px solid rgba(198,40,40,0.2);
+ }
+ </style>
 </head>
 <body>
-  <div class="app-container">
-    <!-- LEFT SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-container"><img src="../assets/logo.png" alt="ST" class="logo-placeholder" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">ST</span></div>
-        <div><h1 class="brand-name">Sivakami</h1><span class="brand-sub">Traders</span></div>
-      </div>
-      <ul class="sidebar-menu">
-        <li class="menu-item"><a href="admin-dashboard.html"><span>📊</span> Dashboard</a></li>
-        <li class="menu-item"><a href="materials.html"><span>📦</span> Materials / Products</a></li>
-        <li class="menu-item"><a href="add-stock.html"><span>📥</span> Add Stock</a></li>
-        <li class="menu-item"><a href="stock-out.html"><span>📤</span> Sales</a></li>
-        <li class="menu-item"><a href="customers.html"><span>👥</span> Customers</a></li>
-        <li class="menu-item"><a href="receipts.html"><span>🧾</span> Receipts</a></li>
-        <li class="menu-item"><a href="stock-movements.html"><span>🔄</span> Stock History</a></li>
-        <li class="menu-item"><a href="expenses.html"><span>💸</span> Expenses</a></li>
-        <li class="menu-item"><a href="reports.html"><span>📋</span> Reports</a></li>
-        <li class="menu-item active"><a href="settings.html"><span>⚙️</span> Settings / Backup</a></li>
-      </ul>
-      <div class="sidebar-footer">
-        <div class="user-profile"><span class="profile-name" id="user-display-name">Admin</span><span class="profile-role">Administrator</span></div>
-        <button class="btn-logout" id="logout-button"><span>🚪</span> Logout</button>
-      </div>
-    </aside>
+ <div class="app-container">
+ <!-- LEFT SIDEBAR -->
+ <aside class="sidebar">
+ <div class="sidebar-header">
+ <div class="logo-container"><img src="../assets/logo.png" alt="ST" class="logo-placeholder" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">ST</span></div>
+ <div><h1 class="brand-name">Sivakami</h1><span class="brand-sub">Traders</span></div>
+ </div>
+ <ul class="sidebar-menu">
+ <li class="menu-item"><a href="admin-dashboard.html">Dashboard</a></li>
+ <li class="menu-item"><a href="materials.html">Products</a></li>
+ <li class="menu-item"><a href="add-stock.html">Add Stock</a></li>
+ <li class="menu-item"><a href="stock-out.html">Sales</a></li>
+ <li class="menu-item"><a href="customers.html">Customers</a></li>
+ <li class="menu-item"><a href="receipts.html">Receipts</a></li>
+ <li class="menu-item"><a href="reports.html">Reports</a></li>
+ <li class="menu-item active"><a href="settings.html">Settings</a></li>
+ </ul>
+ <div class="sidebar-footer">
+ <div class="user-profile"><span class="profile-name" id="user-display-name">Admin</span><span class="profile-role">Administrator</span></div>
+ <button class="btn-logout" id="logout-button">Logout</button>
+ </div>
+ </aside>
 
-    <!-- MAIN CONTENT AREA -->
-    <main class="main-content">
-      <header class="content-header">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <img src="../assets/logo.png" alt="ST" style="height:36px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.1);" onerror="this.style.display='none';">
-          <h2 class="page-title">⚙️ Settings & System Integrity</h2>
-        </div>
-        <div style="font-size:13px;color:var(--text-muted);">Manage company details, databases, backup logs, and system health status</div>
-      </header>
+ <!-- MAIN CONTENT AREA -->
+ <main class="main-content">
+ <header class="content-header">
+ <div style="display:flex;align-items:center;gap:12px;">
+ <img src="../assets/logo.png" alt="ST" style="height:36px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.1);" onerror="this.style.display='none';">
+ <h2 class="page-title"> Settings & System Integrity</h2>
+ </div>
+ <div style="font-size:13px;color:var(--text-muted);">Manage company details, databases, backup logs, and system health status</div>
+ </header>
 
-      <div class="content-body">
-        <div class="grid-two-equal">
-          <!-- COMPANY SETTINGS FORM -->
-          <div class="table-container">
-            <div class="table-header">
-              <h3 style="font-family:'Outfit';font-size:16px;">🏢 Company Information</h3>
-            </div>
-            <div style="padding:24px;">
-              <form id="settings-form">
-                <div class="form-group">
-                  <label for="company-name" class="form-label">Company Name *</label>
-                  <input type="text" id="company-name" class="form-control" placeholder="Sivakami Traders" required>
-                </div>
-                <div class="form-group">
-                  <label for="company-address" class="form-label">Address</label>
-                  <textarea id="company-address" class="form-control" rows="3" placeholder="Enter full business address"></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="company-phone" class="form-label">Phone Number</label>
-                  <input type="text" id="company-phone" class="form-control" placeholder="+91 XXXXX XXXXX">
-                </div>
-                <div class="form-group">
-                  <label for="company-email" class="form-label">Email Address</label>
-                  <input type="email" id="company-email" class="form-control" placeholder="info@company.com">
-                </div>
-                <div class="form-group">
-                  <label for="company-gstin" class="form-label">GSTIN / Tax Number</label>
-                  <input type="text" id="company-gstin" class="form-control" placeholder="33AAAAA0000A1Z1">
-                </div>
-                <div class="form-group">
-                  <label for="company-logo" class="form-label">Company Logo Path</label>
-                  <input type="text" id="company-logo" class="form-control" placeholder="e.g., assets/logo.png">
-                </div>
-                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;">💾 Save Configuration</button>
-              </form>
-            </div>
-          </div>
+ <div class="content-body">
+ <div class="flex-column-layout">
+ <!-- COMPANY SETTINGS FORM -->
+ <div class="table-container">
+ <div class="table-header">
+ <h3 style="font-family:'Outfit';font-size:16px;"> Company Information</h3>
+ </div>
+ <div style="padding:24px;">
+ <form id="settings-form">
+ <div class="form-group">
+ <label for="company-name" class="form-label">Company Name *</label>
+ <input type="text" id="company-name" class="form-control" placeholder="Sivakami Traders" required>
+ </div>
+ <div class="form-group">
+ <label for="company-address" class="form-label">Address</label>
+ <textarea id="company-address" class="form-control" rows="3" placeholder="Enter full business address"></textarea>
+ </div>
+ <div class="form-group">
+ <label for="company-phone" class="form-label">Phone Number</label>
+ <input type="text" id="company-phone" class="form-control" placeholder="+91 XXXXX XXXXX">
+ </div>
+ <div class="form-group">
+ <label for="company-email" class="form-label">Email Address</label>
+ <input type="email" id="company-email" class="form-control" placeholder="info@company.com">
+ </div>
+ <div class="form-group">
+ <label for="company-gstin" class="form-label">GSTIN / Tax Number</label>
+ <input type="text" id="company-gstin" class="form-control" placeholder="33AAAAA0000A1Z1">
+ </div>
+ <div class="form-group">
+ <label for="company-logo" class="form-label">Company Logo Path</label>
+ <input type="text" id="company-logo" class="form-control" placeholder="e.g., assets/logo.png">
+ </div>
+ <button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;"> Save Configuration</button>
+ </form>
+ </div>
+ </div>
 
-          <!-- DATABASE BACKUP & DIAGNOSTICS -->
-          <div style="display:flex;flex-direction:column;gap:24px;">
-            
-            <!-- DATABASE HEALTH STATUS -->
-            <div class="table-container">
-              <div class="table-header" style="display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="font-family:'Outfit';font-size:16px;">🩺 Database Health & Diagnostics</h3>
-                <span id="health-status-badge" class="health-badge healthy">Healthy</span>
-              </div>
-              <div style="padding:20px; font-size:13px; line-height:1.6;">
-                <table style="width:100%; border-collapse:collapse;">
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Database File Size:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-db-size">-</td></tr>
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Total Customers:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-cust-count">-</td></tr>
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Total Products:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-prod-count">-</td></tr>
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Total Transactions / Receipts:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-receipts-count">-</td></tr>
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Total Expenses Tracked:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-expenses-count">-</td></tr>
-                  <tr><td style="padding:8px 0; color:var(--text-muted);">Last Backup Executed:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-last-backup">-</td></tr>
-                </table>
-              </div>
-            </div>
+ <!-- DATABASE BACKUP & DIAGNOSTICS -->
+ 
+ <!-- DATABASE HEALTH STATUS -->
+ <div class="table-container">
+ <div class="table-header" style="display:flex; justify-content:space-between; align-items:center;">
+ <h3 style="font-family:'Outfit';font-size:16px;"> Database Health & Diagnostics</h3>
+ <span id="health-status-badge" class="health-badge healthy">Healthy</span>
+ </div>
+ <div style="padding:20px; font-size:13px; line-height:1.6;">
+ <table style="width:100%; border-collapse:collapse;">
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Database File Size:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-db-size">-</td></tr>
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Total Customers:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-cust-count">-</td></tr>
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Total Products:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-prod-count">-</td></tr>
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Total Transactions / Receipts:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-receipts-count">-</td></tr>
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:8px 0; color:var(--text-muted);">Total Expenses Tracked:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-expenses-count">-</td></tr>
+ <tr><td style="padding:8px 0; color:var(--text-muted);">Last Backup Executed:</td><td style="padding:8px 0; text-align:right; font-weight:bold;" id="diag-last-backup">-</td></tr>
+ </table>
+ </div>
+ </div>
 
-            <!-- DATABASE BACKUP -->
-            <div class="table-container">
-              <div class="table-header">
-                <h3 style="font-family:'Outfit';font-size:16px;">💾 Database Backups</h3>
-              </div>
-              <div style="padding:20px;display:flex;flex-direction:column;gap:12px; font-size:13px;">
-                <p style="color:var(--text-muted); line-height:1.5; margin:0;">
-                  Generate a snapshot copy of the SQLite database. Choose target directories and automate the file writing process safely.
-                </p>
-                <div id="backup-details-container" style="display:none; background:#f1f5f9; padding:12px; border-radius:6px; border:1px solid #cbd5e1; line-height:1.5;">
-                  <div><strong>Last File:</strong> <span id="lbl-backup-path" style="word-break:break-all;">-</span></div>
-                  <div><strong>Size:</strong> <span id="lbl-backup-size">-</span></div>
-                  <div><strong>Timestamp:</strong> <span id="lbl-backup-time">-</span></div>
-                </div>
-                <button class="btn btn-success" id="btn-backup" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;">
-                  <span>💾</span> Create Timestamped Backup File
-                </button>
-              </div>
-            </div>
+ <!-- DATABASE BACKUP -->
+ <div class="table-container">
+ <div class="table-header">
+ <h3 style="font-family:'Outfit';font-size:16px;"> Database Backups</h3>
+ </div>
+ <div style="padding:20px;display:flex;flex-direction:column;gap:12px; font-size:13px;">
+ <p style="color:var(--text-muted); line-height:1.5; margin:0;">
+ Generate a snapshot copy of the SQLite database. Choose target directories and automate the file writing process safely.
+ </p>
+ <div id="backup-details-container" style="display:none; background:#f1f5f9; padding:12px; border-radius:6px; border:1px solid #cbd5e1; line-height:1.5;">
+ <div><strong>Last File:</strong> <span id="lbl-backup-path" style="word-break:break-all;">-</span></div>
+ <div><strong>Size:</strong> <span id="lbl-backup-size">-</span></div>
+ <div><strong>Timestamp:</strong> <span id="lbl-backup-time">-</span></div>
+ </div>
+ <button class="btn btn-success" id="btn-backup" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;">
+ Create Timestamped Backup File
+ </button>
+ </div>
+ </div>
 
-            <!-- DATABASE RESTORE -->
-            <div class="table-container">
-              <div class="table-header" style="border-bottom: 2px solid var(--danger-color);">
-                <h3 style="font-family:'Outfit';font-size:16px;color:var(--danger-color);">⚠️ Database Restore</h3>
-              </div>
-              <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
-                <p style="font-size:13px;line-height:1.5;color:var(--text-muted); margin:0;">
-                  Restore database state from a previously saved backup file. 
-                  <strong style="color:var(--danger-color);">Warning: Overwrites all existing system files!</strong>
-                </p>
-                <button class="btn btn-secondary" id="btn-restore" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:var(--danger-color);color:#fff;border:none;">
-                  <span>⚠️</span> Restore from Backup File
-                </button>
-              </div>
-            </div>
+ <!-- DATABASE RESTORE -->
+ <div class="table-container">
+ <div class="table-header" style="border-bottom: 2px solid var(--danger-color);">
+ <h3 style="font-family:'Outfit';font-size:16px;color:var(--danger-color);"> Database Restore</h3>
+ </div>
+ <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+ <p style="font-size:13px;line-height:1.5;color:var(--text-muted); margin:0;">
+ Restore database state from a previously saved backup file. 
+ <strong style="color:var(--danger-color);">Warning: Overwrites all existing system files!</strong>
+ </p>
+ <button class="btn btn-secondary" id="btn-restore" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:var(--danger-color);color:#fff;border:none;">
+ Restore from Backup File
+ </button>
+ </div>
+ </div>
 
-            <!-- ABOUT APPLICATION -->
-            <div class="table-container">
-              <div class="table-header">
-                <h3 style="font-family:'Outfit';font-size:16px;">ℹ️ About Application</h3>
-              </div>
-              <div style="padding:20px; font-size:13px; line-height:1.6;">
-                <table style="width:100%; border-collapse:collapse;">
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Application Name:</td><td style="padding:6px 0; text-align:right; font-weight:600;">Sivakami Traders Inventory Management System</td></tr>
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Version:</td><td style="padding:6px 0; text-align:right; font-weight:600;">v1.0.0</td></tr>
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Developed By:</td><td style="padding:6px 0; text-align:right; font-weight:600;">Vallyron Technologies</td></tr>
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Licensed To:</td><td style="padding:6px 0; text-align:right; font-weight:600;">Sivakami Traders</td></tr>
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Support Email:</td><td style="padding:6px 0; text-align:right; font-weight:600;"><a href="mailto:vallyrontech@gmail.com">vallyrontech@gmail.com</a></td></tr>
-                  <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Database Engine:</td><td style="padding:6px 0; text-align:right; font-weight:600;">SQLite 3 (Local Database)</td></tr>
-                  <tr><td style="padding:6px 0; color:var(--text-muted);">Release Build Date:</td><td style="padding:6px 0; text-align:right; font-weight:600;">2026-06-30</td></tr>
-                </table>
-              </div>
-            </div>
+ <!-- ABOUT APPLICATION -->
+ <div class="table-container">
+ <div class="table-header">
+ <h3 style="font-family:'Outfit';font-size:16px;">ℹ About Application</h3>
+ </div>
+ <div style="padding:20px; font-size:13px; line-height:1.6;">
+ <table style="width:100%; border-collapse:collapse;">
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Application Name:</td><td style="padding:6px 0; text-align:right; font-weight:600;">Sivakami Traders Inventory Management System</td></tr>
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Version:</td><td style="padding:6px 0; text-align:right; font-weight:600;">v1.0.0</td></tr>
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Developed By:</td><td style="padding:6px 0; text-align:right; font-weight:600;">Vallyron Technologies</td></tr>
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Licensed To:</td><td style="padding:6px 0; text-align:right; font-weight:600;">Sivakami Traders</td></tr>
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Support Email:</td><td style="padding:6px 0; text-align:right; font-weight:600;"><a href="mailto:vallyrontech@gmail.com">vallyrontech@gmail.com</a></td></tr>
+ <tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 0; color:var(--text-muted);">Database Engine:</td><td style="padding:6px 0; text-align:right; font-weight:600;">SQLite 3 (Local Database)</td></tr>
+ <tr><td style="padding:6px 0; color:var(--text-muted);">Release Build Date:</td><td style="padding:6px 0; text-align:right; font-weight:600;">2026-06-30</td></tr>
+ </table>
+ </div>
+ </div>
 
-            <!-- DANGER ZONE / RESET -->
-            <div class="table-container" style="border-top: 3px solid var(--danger-color);">
-              <div class="table-header">
-                <h3 style="font-family:'Outfit';font-size:16px;color:var(--danger-color);">🚨 Danger Zone</h3>
-              </div>
-              <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
-                <div style="display:flex;flex-direction:column;gap:10px;">
-                  <button class="btn btn-secondary" id="btn-reset-demo" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:#f57f17;color:white;border:none;">
-                    🔄 Reset Demo Data
-                  </button>
-                  <button class="btn btn-secondary" id="btn-clear-demo" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:var(--danger-color);color:white;border:none;">
-                    🗑️ Clear All Demo Data
-                  </button>
-                  <button class="btn btn-secondary" id="btn-clear-business" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:#ff6f00;color:white;border:none;">
-                    📂 Clear All Business Data
-                  </button>
-                </div>
-              </div>
-            </div>
+ <!-- DANGER ZONE / RESET -->
+ <div class="table-container" style="border-top: 3px solid var(--danger-color);">
+ <div class="table-header">
+ <h3 style="font-family:'Outfit';font-size:16px;color:var(--danger-color);"> Danger Zone</h3>
+ </div>
+ <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+ <div style="display:flex;flex-direction:column;gap:10px;">
+ <button class="btn btn-secondary" id="btn-reset-demo" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:#f57f17;color:white;border:none;">
+ Reset Demo Data
+ </button>
+ <button class="btn btn-secondary" id="btn-clear-demo" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:var(--danger-color);color:white;border:none;">
+ Clear All Demo Data
+ </button>
+ <button class="btn btn-secondary" id="btn-clear-business" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:#ff6f00;color:white;border:none;">
+ Clear All Business Data
+ </button>
+ </div>
+ </div>
+ </div>
 
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
+ </div>
+ </div>
+ </main>
+ </div>
 
-  <div id="toast" class="notification"></div>
-  <script src="../js/common.js"></script>
-  <script src="../js/settings.js"></script>
+ <div id="toast" class="notification"></div>
+ <script src="../js/common.js"></script>
+ <script src="../js/settings.js"></script>
 </body>
 </html>
