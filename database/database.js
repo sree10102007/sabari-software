@@ -377,28 +377,355 @@ async function initDatabase() {
  }
  console.log(`Migrated ${existingReceipts.length} payments from existing receipts.`);
  }
- // Seed initial employees if empty
- const empCount = await queryOne('SELECT COUNT(*) as count FROM employees');
- if (!empCount || empCount.count === 0) {
- await run("INSERT INTO employees (name, role) VALUES ('Sabarish', 'Proprietor')");
- await run("INSERT INTO employees (name, role) VALUES ('Arumugam', 'Manager')");
- await run("INSERT INTO employees (name, role) VALUES ('Ramakrishnan', 'Accountant')");
- await run("INSERT INTO employees (name, role) VALUES ('Satheesh', 'Supervisor')");
- await run("INSERT INTO employees (name, role) VALUES ('Sailesh', 'Worker')");
- console.log('Preloaded personnel seeded successfully.');
- }
- } catch (err) {
- console.error('Database initialization error:', err);
- }
+  // Seed initial employees if empty
+  const empCount = await queryOne('SELECT COUNT(*) as count FROM employees');
+  if (!empCount || empCount.count === 0) {
+    await run("INSERT INTO employees (name, role) VALUES ('Sabarish', 'Proprietor')");
+    await run("INSERT INTO employees (name, role) VALUES ('Arumugam', 'Manager')");
+    await run("INSERT INTO employees (name, role) VALUES ('Ramakrishnan', 'Accountant')");
+    await run("INSERT INTO employees (name, role) VALUES ('Satheesh', 'Supervisor')");
+    await run("INSERT INTO employees (name, role) VALUES ('Sailesh', 'Worker')");
+    console.log('Preloaded personnel seeded successfully.');
+  }
+
+  // Create unified expenses table
+  await run(`
+  CREATE TABLE IF NOT EXISTS expenses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    expense_category TEXT NOT NULL,
+    expense_date TEXT NOT NULL,
+    vehicle_number TEXT,
+    person_name TEXT,
+    expense_type TEXT NOT NULL,
+    amount REAL NOT NULL,
+    remarks TEXT,
+    created_at TEXT,
+    updated_at TEXT,
+    is_deleted INTEGER DEFAULT 0
+  )
+  `);
+
+  // Migration logic from old tables
+  const expCountTable = await queryOne('SELECT COUNT(*) as count FROM expenses');
+  if (expCountTable && expCountTable.count === 0) {
+    // Migrate vehicle expenses
+    const hasVehicleExpensesTable = await queryOne("SELECT name FROM sqlite_master WHERE type='table' AND name='vehicle_expenses'");
+    if (hasVehicleExpensesTable) {
+      const vExps = await query('SELECT * FROM vehicle_expenses');
+      for (const v of vExps) {
+        const remarksStr = v.remarks || '';
+        const vDate = v.date || new Date().toISOString().split('T')[0];
+        const vCreatedAt = v.created_at || new Date().toISOString();
+        if ((v.fuel_expense || 0) > 0) {
+          await run(`INSERT INTO expenses (expense_category, expense_date, vehicle_number, expense_type, amount, remarks, created_at, updated_at, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+            ['vehicle', vDate, v.vehicle_number, 'Fuel', v.fuel_expense, remarksStr, vCreatedAt, vCreatedAt]);
+        }
+        if ((v.tn_snacks_expense || 0) > 0) {
+          await run(`INSERT INTO expenses (expense_category, expense_date, vehicle_number, expense_type, amount, remarks, created_at, updated_at, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+            ['vehicle', vDate, v.vehicle_number, 'Other', v.tn_snacks_expense, remarksStr ? `${remarksStr} (Snacks)` : 'Snacks', vCreatedAt, vCreatedAt]);
+        }
+        if ((v.other_expense || 0) > 0) {
+          await run(`INSERT INTO expenses (expense_category, expense_date, vehicle_number, expense_type, amount, remarks, created_at, updated_at, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+            ['vehicle', vDate, v.vehicle_number, 'Other', v.other_expense, remarksStr, vCreatedAt, vCreatedAt]);
+        }
+      }
+    }
+
+    // Migrate personal expenses
+    const hasPersonalExpensesTable = await queryOne("SELECT name FROM sqlite_master WHERE type='table' AND name='personal_expenses'");
+    if (hasPersonalExpensesTable) {
+      const pExps = await query('SELECT pe.*, e.name as emp_name FROM personal_expenses pe JOIN employees e ON pe.employee_id = e.id');
+      for (const p of pExps) {
+        const remarksStr = (p.remarks || '') + (p.description ? ' - ' + p.description : '');
+        const pDate = p.date || new Date().toISOString().split('T')[0];
+        const pCreatedAt = p.created_at || new Date().toISOString();
+        if ((p.amount || 0) > 0) {
+          await run(`INSERT INTO expenses (expense_category, expense_date, person_name, expense_type, amount, remarks, created_at, updated_at, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+            ['personal', pDate, p.emp_name, 'Other', p.amount, remarksStr, pCreatedAt, pCreatedAt]);
+        }
+      }
+    }
+  }
+
+  } catch (err) {
+    console.error('Database initialization error:', err);
+  }
 }
 
 // Initialize tables and seed
 initDatabase();
 
+// --- NEW EXPENSES DATABASE FUNCTIONS ---
+
+async function addExpense(data) {
+  const { expense_category, expense_date, vehicle_number, person_name, expense_type, amount, remarks } = data;
+  const now = new Date().toISOString();
+  return await run(
+    `INSERT INTO expenses (expense_category, expense_date, vehicle_number, person_name, expense_type, amount, remarks, created_at, updated_at, is_deleted)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+    [expense_category, expense_date, vehicle_number || null, person_name || null, expense_type, amount, remarks || '', now, now]
+  );
+}
+
+async function updateExpense(id, data) {
+  const { expense_category, expense_date, vehicle_number, person_name, expense_type, amount, remarks } = data;
+  const now = new Date().toISOString();
+  return await run(
+    `UPDATE expenses 
+     SET expense_category = ?, expense_date = ?, vehicle_number = ?, person_name = ?, expense_type = ?, amount = ?, remarks = ?, updated_at = ?
+     WHERE id = ?`,
+    [expense_category, expense_date, vehicle_number || null, person_name || null, expense_type, amount, remarks || '', now, id]
+  );
+}
+
+async function deleteExpense(id) {
+  const now = new Date().toISOString();
+  return await run(
+    `UPDATE expenses SET is_deleted = 1, updated_at = ? WHERE id = ?`,
+    [now, id]
+  );
+}
+
+async function getExpenses(filters = {}) {
+  let sql = `SELECT * FROM expenses WHERE (is_deleted = 0 OR is_deleted IS NULL)`;
+  const params = [];
+  if (filters.expense_category && filters.expense_category !== 'All') {
+    sql += ` AND expense_category = ?`;
+    params.push(filters.expense_category);
+  }
+  if (filters.from_date) {
+    sql += ` AND date(expense_date) >= date(?)`;
+    params.push(filters.from_date);
+  }
+  if (filters.to_date) {
+    sql += ` AND date(expense_date) <= date(?)`;
+    params.push(filters.to_date);
+  }
+  if (filters.vehicle_number) {
+    sql += ` AND vehicle_number = ?`;
+    params.push(filters.vehicle_number);
+  }
+  if (filters.person_name) {
+    sql += ` AND person_name = ?`;
+    params.push(filters.person_name);
+  }
+  if (filters.expense_type && filters.expense_type !== 'All') {
+    sql += ` AND expense_type = ?`;
+    params.push(filters.expense_type);
+  }
+  sql += ` ORDER BY expense_date DESC, id DESC`;
+  return await query(sql, params);
+}
+
+async function getExpenseSummary(filters = {}) {
+  let sqlVeh = `SELECT SUM(amount) as total FROM expenses WHERE (is_deleted = 0 OR is_deleted IS NULL) AND expense_category = 'vehicle'`;
+  let sqlPer = `SELECT SUM(amount) as total FROM expenses WHERE (is_deleted = 0 OR is_deleted IS NULL) AND expense_category = 'personal'`;
+  const paramsVeh = [];
+  const paramsPer = [];
+
+  if (filters.from_date) {
+    sqlVeh += ` AND date(expense_date) >= date(?)`;
+    sqlPer += ` AND date(expense_date) >= date(?)`;
+    paramsVeh.push(filters.from_date);
+    paramsPer.push(filters.from_date);
+  }
+  if (filters.to_date) {
+    sqlVeh += ` AND date(expense_date) <= date(?)`;
+    sqlPer += ` AND date(expense_date) <= date(?)`;
+    paramsVeh.push(filters.to_date);
+    paramsPer.push(filters.to_date);
+  }
+  if (filters.vehicle_number) {
+    sqlVeh += ` AND vehicle_number = ?`;
+    paramsVeh.push(filters.vehicle_number);
+  }
+  if (filters.person_name) {
+    sqlPer += ` AND person_name = ?`;
+    paramsPer.push(filters.person_name);
+  }
+  if (filters.expense_type && filters.expense_type !== 'All') {
+    sqlVeh += ` AND expense_type = ?`;
+    sqlPer += ` AND expense_type = ?`;
+    paramsVeh.push(filters.expense_type);
+    paramsPer.push(filters.expense_type);
+  }
+
+  let vehicleTotal = 0;
+  let personalTotal = 0;
+
+  if (!filters.expense_category || filters.expense_category === 'All' || filters.expense_category === 'vehicle') {
+    const rVeh = await queryOne(sqlVeh, paramsVeh);
+    vehicleTotal = rVeh?.total || 0;
+  }
+  if (!filters.expense_category || filters.expense_category === 'All' || filters.expense_category === 'personal') {
+    const rPer = await queryOne(sqlPer, paramsPer);
+    personalTotal = rPer?.total || 0;
+  }
+
+  return {
+    vehicleTotal,
+    personalTotal,
+    totalExpenses: vehicleTotal + personalTotal
+  };
+}
+
+async function getVehicleExpenseBreakdown(filters = {}) {
+  let sql = `
+    SELECT vehicle_number,
+           SUM(amount) as total_expense,
+           SUM(CASE WHEN expense_type = 'Fuel' THEN amount ELSE 0 END) as fuel_expense,
+           SUM(CASE WHEN expense_type = 'Toll Charges' THEN amount ELSE 0 END) as toll_expense,
+           SUM(CASE WHEN expense_type = 'Driver Allowance' THEN amount ELSE 0 END) as allowance_expense,
+           SUM(CASE WHEN expense_type = 'Maintenance' THEN amount ELSE 0 END) as maintenance_expense,
+           SUM(CASE WHEN expense_type = 'Loading / Unloading' THEN amount ELSE 0 END) as loading_expense,
+           SUM(CASE WHEN expense_type = 'Other' THEN amount ELSE 0 END) as other_expense
+    FROM expenses
+    WHERE (is_deleted = 0 OR is_deleted IS NULL) AND expense_category = 'vehicle'
+  `;
+  const params = [];
+  if (filters.from_date) {
+    sql += ` AND date(expense_date) >= date(?)`;
+    params.push(filters.from_date);
+  }
+  if (filters.to_date) {
+    sql += ` AND date(expense_date) <= date(?)`;
+    params.push(filters.to_date);
+  }
+  if (filters.vehicle_number) {
+    sql += ` AND vehicle_number = ?`;
+    params.push(filters.vehicle_number);
+  }
+  if (filters.expense_type && filters.expense_type !== 'All') {
+    sql += ` AND expense_type = ?`;
+    params.push(filters.expense_type);
+  }
+  sql += ` GROUP BY vehicle_number ORDER BY total_expense DESC`;
+  return await query(sql, params);
+}
+
+async function getPersonalExpenseBreakdown(filters = {}) {
+  let sql = `
+    SELECT person_name,
+           SUM(amount) as total_expense,
+           SUM(CASE WHEN expense_type = 'Worker Pay' THEN amount ELSE 0 END) as worker_pay,
+           SUM(CASE WHEN expense_type = 'Tea / Snacks' THEN amount ELSE 0 END) as tea_snacks,
+           SUM(CASE WHEN expense_type = 'Refreshments' THEN amount ELSE 0 END) as refreshments,
+           SUM(CASE WHEN expense_type = 'Office Expense' THEN amount ELSE 0 END) as office_expense,
+           SUM(CASE WHEN expense_type = 'Salary / Allowance' THEN amount ELSE 0 END) as salary_allowance,
+           SUM(CASE WHEN expense_type = 'Other' THEN amount ELSE 0 END) as other_expense
+    FROM expenses
+    WHERE (is_deleted = 0 OR is_deleted IS NULL) AND expense_category = 'personal'
+  `;
+  const params = [];
+  if (filters.from_date) {
+    sql += ` AND date(expense_date) >= date(?)`;
+    params.push(filters.from_date);
+  }
+  if (filters.to_date) {
+    sql += ` AND date(expense_date) <= date(?)`;
+    params.push(filters.to_date);
+  }
+  if (filters.person_name) {
+    sql += ` AND person_name = ?`;
+    params.push(filters.person_name);
+  }
+  if (filters.expense_type && filters.expense_type !== 'All') {
+    sql += ` AND expense_type = ?`;
+    params.push(filters.expense_type);
+  }
+  sql += ` GROUP BY person_name ORDER BY total_expense DESC`;
+  return await query(sql, params);
+}
+
+async function getDailyExpenseSummary(filters = {}) {
+  let sql = `
+    SELECT expense_date as exp_date,
+           SUM(CASE WHEN expense_category = 'vehicle' THEN amount ELSE 0 END) as vehicle_total,
+           SUM(CASE WHEN expense_category = 'personal' THEN amount ELSE 0 END) as personal_total,
+           SUM(amount) as total
+    FROM expenses
+    WHERE (is_deleted = 0 OR is_deleted IS NULL)
+  `;
+  const params = [];
+  if (filters.from_date) {
+    sql += ` AND date(expense_date) >= date(?)`;
+    params.push(filters.from_date);
+  }
+  if (filters.to_date) {
+    sql += ` AND date(expense_date) <= date(?)`;
+    params.push(filters.to_date);
+  }
+  if (filters.expense_category && filters.expense_category !== 'All') {
+    sql += ` AND expense_category = ?`;
+    params.push(filters.expense_category);
+  }
+  if (filters.vehicle_number) {
+    sql += ` AND vehicle_number = ?`;
+    params.push(filters.vehicle_number);
+  }
+  if (filters.person_name) {
+    sql += ` AND person_name = ?`;
+    params.push(filters.person_name);
+  }
+  if (filters.expense_type && filters.expense_type !== 'All') {
+    sql += ` AND expense_type = ?`;
+    params.push(filters.expense_type);
+  }
+  sql += ` GROUP BY expense_date ORDER BY expense_date DESC LIMIT 30`;
+  return await query(sql, params);
+}
+
+async function getMonthlyExpenseTrend(filters = {}) {
+  let sql = `
+    SELECT strftime('%Y-%m', expense_date) as exp_month,
+           SUM(CASE WHEN expense_category = 'vehicle' THEN amount ELSE 0 END) as vehicle_total,
+           SUM(CASE WHEN expense_category = 'personal' THEN amount ELSE 0 END) as personal_total,
+           SUM(amount) as total
+    FROM expenses
+    WHERE (is_deleted = 0 OR is_deleted IS NULL)
+  `;
+  const params = [];
+  if (filters.from_date) {
+    sql += ` AND date(expense_date) >= date(?)`;
+    params.push(filters.from_date);
+  }
+  if (filters.to_date) {
+    sql += ` AND date(expense_date) <= date(?)`;
+    params.push(filters.to_date);
+  }
+  if (filters.expense_category && filters.expense_category !== 'All') {
+    sql += ` AND expense_category = ?`;
+    params.push(filters.expense_category);
+  }
+  if (filters.vehicle_number) {
+    sql += ` AND vehicle_number = ?`;
+    params.push(filters.vehicle_number);
+  }
+  if (filters.person_name) {
+    sql += ` AND person_name = ?`;
+    params.push(filters.person_name);
+  }
+  if (filters.expense_type && filters.expense_type !== 'All') {
+    sql += ` AND expense_type = ?`;
+    params.push(filters.expense_type);
+  }
+  sql += ` GROUP BY exp_month ORDER BY exp_month DESC LIMIT 12`;
+  return await query(sql, params);
+}
+
 module.exports = {
- db,
- dbPath,
- run,
- query,
- queryOne
+  db,
+  dbPath,
+  run,
+  query,
+  queryOne,
+  addExpense,
+  updateExpense,
+  deleteExpense,
+  getExpenses,
+  getExpenseSummary,
+  getVehicleExpenseBreakdown,
+  getPersonalExpenseBreakdown,
+  getDailyExpenseSummary,
+  getMonthlyExpenseTrend
 };

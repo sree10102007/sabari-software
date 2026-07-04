@@ -104,6 +104,7 @@
  <li class="menu-item"><a href="stock-out.html">Sales</a></li>
  <li class="menu-item"><a href="customers.html">Customers</a></li>
  <li class="menu-item"><a href="receipts.html">Receipts</a></li>
+ <li class="menu-item"><a href="expenses.html">Expense</a></li>
  <li class="menu-item active"><a href="reports.html">Reports</a></li>
  <li class="menu-item"><a href="settings.html">Settings</a></li>
  </ul>
@@ -213,6 +214,33 @@
  </table>
  </div>
  </div>
+
+ <!-- Sales Transactions Ledger -->
+ <div class="table-container" style="margin-top:24px; width:100%;">
+    <div class="table-header">
+      <h3 style="font-family:'Outfit';font-size:16px;">Sales Transactions Ledger</h3>
+    </div>
+    <div style="max-height: 400px; overflow-y: auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Receipt No.</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Product Name</th>
+            <th>Quantity</th>
+            <th>Total Amount</th>
+            <th>Paid Amount</th>
+            <th>Balance Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="sales-table-ledger">
+          <tr><td colspan="9" style="text-align:center;color:var(--text-muted);">No sales records found.</td></tr>
+        </tbody>
+      </table>
+    </div>
+ </div>
  </div>
 
  <!-- STOCK REPORT PAGE -->
@@ -287,16 +315,54 @@
 
  <!-- EXPENSE REPORT PAGE -->
  <div id="report-expenses" class="report-section">
- <div class="metrics-summary-row">
- <div class="card card-accent-orange">
- <div><div class="card-title">Logistics & Vehicle Expenses</div><div class="card-value" id="exp-card-vehicle">₹0.00</div></div>
- <div class="card-subtitle"> Fuel, driver allowance & toll charges</div>
- </div>
- <div class="card card-accent-green">
- <div><div class="card-title">Personnel & Admin Expenses</div><div class="card-value" id="exp-card-personal">₹0.00</div></div>
- <div class="card-subtitle"> Worker pay, tea, snacks & refreshments</div>
- </div>
- </div>
+    <!-- Inline Expense Filters -->
+    <div class="expense-report-filters" style="display:flex; gap:12px; margin-bottom:20px; background:var(--bg-secondary); padding:16px; border-radius:var(--border-radius-md); border:1px solid var(--border-color); align-items:flex-end; flex-wrap:wrap;">
+      <div class="form-group" style="margin:0; width:160px;">
+        <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;">Category</label>
+        <select id="rep-exp-category" class="form-control" style="padding:8px 12px; height:38px;">
+          <option value="All">All Categories</option>
+          <option value="vehicle">Vehicle / Logistics</option>
+          <option value="personal">Personal / Admin</option>
+        </select>
+      </div>
+      <div class="form-group" id="rep-exp-vehicle-group" style="margin:0; width:160px;">
+        <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;">Vehicle Number</label>
+        <input type="text" id="rep-exp-vehicle" class="form-control" placeholder="e.g. TN-45" style="padding:6px 12px; height:38px; margin:0;">
+      </div>
+      <div class="form-group" id="rep-exp-person-group" style="margin:0; width:160px;">
+        <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;">Person Name</label>
+        <select id="rep-exp-person" class="form-control" style="padding:8px 12px; height:38px;">
+          <option value="">All Personnel</option>
+          <option value="Sabarish">Sabarish</option>
+          <option value="Arumugam">Arumugam</option>
+          <option value="Ramakrishna">Ramakrishna</option>
+          <option value="Satheesh">Satheesh</option>
+          <option value="Sailesh">Sailesh</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0; width:160px;">
+        <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;">Expense Type</label>
+        <select id="rep-exp-type" class="form-control" style="padding:8px 12px; height:38px;">
+          <option value="All">All Types</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="btn-filter-rep-expenses" style="height:38px; padding:0 20px;">Apply Filter</button>
+    </div>
+
+    <div class="metrics-summary-row">
+      <div class="card card-accent-orange">
+        <div><div class="card-title">Logistics & Vehicle Expenses</div><div class="card-value" id="exp-card-vehicle">₹0.00</div></div>
+        <div class="card-subtitle"> Fuel, driver allowance & toll charges</div>
+      </div>
+      <div class="card card-accent-green">
+        <div><div class="card-title">Personnel & Admin Expenses</div><div class="card-value" id="exp-card-personal">₹0.00</div></div>
+        <div class="card-subtitle"> Worker pay, tea, snacks & refreshments</div>
+      </div>
+      <div class="card card-accent-orange">
+        <div><div class="card-title">Total Expenses</div><div class="card-value" id="exp-card-total">₹0.00</div></div>
+        <div class="card-subtitle"> Combined vehicle and personnel total</div>
+      </div>
+    </div>
 
  <div class="report-grid-2">
  <div class="table-container">

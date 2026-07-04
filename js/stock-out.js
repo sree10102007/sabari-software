@@ -129,8 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const movements = await window.api.getStockMovements();
       const outMovements = movements.filter(m =>
+        m.stock_direction === 'OUT' &&
         ['Customer Sale','Direct Sale','Stock Out','Site Usage','Damaged Stock','Adjustment','Retailer','Engineer'].includes(m.movement_type)
-        || (m.stock_direction === 'OUT')
       );
       const tbody = document.getElementById('recent-stock-out-body');
       tbody.innerHTML = '';

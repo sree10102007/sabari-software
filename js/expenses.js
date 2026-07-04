@@ -1,391 +1,311 @@
 /**
- * Expenses Module Javascript Logic
+ * Expenses Module Javascript Logic - Refactored (Operational Entry Only)
  */
 document.addEventListener('DOMContentLoaded', async () => {
- window.location.href = 'admin-dashboard.html';
- return;
- // Elements - Summary Cards
- const summaryTodayTotal = document.getElementById('summary-today-total');
- const summaryVehicleToday = document.getElementById('summary-vehicle-today');
- const summaryPersonalToday = document.getElementById('summary-personal-today');
- const summaryMonthlyTotal = document.getElementById('summary-monthly-total');
+  // Session check
+  try {
+    const currentUser = await window.api.getSession();
+    if (!currentUser) {
+      window.location.href = 'login.html';
+      return;
+    }
+    document.getElementById('user-display-name').textContent = currentUser.name;
+  } catch (err) {
+    window.location.href = 'login.html';
+    return;
+  }
 
- // Elements - Vehicle Expenses
- const vehicleTableBody = document.getElementById('vehicle-table-body');
- const vehicleSearch = document.getElementById('vehicle-search');
- const vehicleFromDate = document.getElementById('vehicle-from-date');
- const vehicleToDate = document.getElementById('vehicle-to-date');
- const btnVehicleFilter = document.getElementById('btn-vehicle-filter');
- const btnAddVehicleExpense = document.getElementById('btn-add-vehicle-expense');
+  // Logout handler
+  document.getElementById('logout-button').addEventListener('click', async () => {
+    await window.api.logout();
+    window.location.href = 'login.html';
+  });
 
- // Elements - Personal Expenses
- const personalTableBody = document.getElementById('personal-table-body');
- const personalSearch = document.getElementById('personal-search');
- const personalEmpFilter = document.getElementById('personal-emp-filter');
- const personalFromDate = document.getElementById('personal-from-date');
- const personalToDate = document.getElementById('personal-to-date');
- const btnPersonalFilter = document.getElementById('btn-personal-filter');
- const btnAddPersonalExpense = document.getElementById('btn-add-personal-expense');
+  // UI Toast helper
+  const showToast = (msg, type = 'success') => {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = `notification show ${type}`;
+    setTimeout(() => { toast.className = 'notification'; }, 4000);
+  };
 
- // Modals
- const vehicleModal = document.getElementById('vehicle-modal');
- const personalModal = document.getElementById('personal-modal');
+  // Elements
+  const expenseForm = document.getElementById('expense-form');
+  const expenseId = document.getElementById('expense-id');
+  const expDate = document.getElementById('exp-date');
+  const expCategory = document.getElementById('exp-category');
+  const expType = document.getElementById('exp-type');
+  const expAmount = document.getElementById('exp-amount');
+  const expRemarks = document.getElementById('exp-remarks');
+  const btnCancelEdit = document.getElementById('btn-cancel-edit');
+  const btnSubmit = document.getElementById('btn-submit');
+  const expenseFormTitle = document.getElementById('expense-form-title');
+  const formExpenseContainer = document.getElementById('form-expense-container');
+  const vehicleExpensesBody = document.getElementById('vehicle-expenses-body');
+  const personalExpensesBody = document.getElementById('personal-expenses-body');
 
- // Form Elements - Vehicle Modal
- const vehicleExpenseForm = document.getElementById('vehicle-expense-form');
- const vehicleExpenseId = document.getElementById('vehicle-expense-id');
- const vExpDate = document.getElementById('v-exp-date');
- const vExpNumber = document.getElementById('v-exp-number');
- const vExpFuel = document.getElementById('v-exp-fuel');
- const vExpSnacks = document.getElementById('v-exp-snacks');
- const vExpOther = document.getElementById('v-exp-other');
- const vExpRemarks = document.getElementById('v-exp-remarks');
- const btnCloseVehicleModal = document.getElementById('btn-close-vehicle-modal');
- const btnCancelVehicleModal = document.getElementById('btn-cancel-vehicle-modal');
+  // Panels
+  const panelVehicle = document.getElementById('panel-vehicle');
+  const expVehicleNumber = document.getElementById('exp-vehicle-number');
+  
+  const panelPersonal = document.getElementById('panel-personal');
+  const expPersonName = document.getElementById('exp-person-name');
 
- // Form Elements - Personal Modal
- const personalExpenseForm = document.getElementById('personal-expense-form');
- const personalExpenseId = document.getElementById('personal-expense-id');
- const pExpDate = document.getElementById('p-exp-date');
- const pExpEmployee = document.getElementById('p-exp-employee');
- const pExpDesc = document.getElementById('p-exp-desc');
- const pExpAmount = document.getElementById('p-exp-amount');
- const pExpRemarks = document.getElementById('p-exp-remarks');
- const btnClosePersonalModal = document.getElementById('btn-close-personal-modal');
- const btnCancelPersonalModal = document.getElementById('btn-cancel-personal-modal');
+  // Types definitions
+  const vehicleTypes = ['Fuel', 'Driver Allowance', 'Toll Charges', 'Maintenance', 'Loading / Unloading', 'Other'];
+  const personalTypes = ['Worker Pay', 'Tea / Snacks', 'Refreshments', 'Office Expense', 'Salary / Allowance', 'Other'];
 
- // Active Sessions / User context
- let employeesList = [];
+  // Initialize
+  initExpenses();
 
- // Initialize
- await initExpenses();
+  function initExpenses() {
+    // Set default date to today
+    expDate.value = new Date().toLocaleString('sv').split(' ')[0];
 
- async function initExpenses() {
- // Set default dates to today
- const todayStr = getTodayString();
- vehicleFromDate.value = todayStr;
- vehicleToDate.value = todayStr;
- personalFromDate.value = todayStr;
- personalToDate.value = todayStr;
+    // Category selection listener
+    expCategory.addEventListener('change', handleCategoryChange);
 
- await loadEmployees();
- await loadSummary();
- await loadVehicleExpenses();
- await loadPersonalExpenses();
- }
+    // Form Submission
+    expenseForm.addEventListener('submit', handleFormSubmit);
 
- // Helper YYYY-MM-DD
- function getTodayString() {
- const d = new Date();
- return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
- }
+    // Cancel Edit Button
+    btnCancelEdit.addEventListener('click', resetExpenseForm);
 
- // Load Employees to Dropdowns
- async function loadEmployees() {
- try {
- employeesList = await window.api.getEmployees();
- 
- // Populate filters
- personalEmpFilter.innerHTML = '<option value="">All Personnel</option>';
- pExpEmployee.innerHTML = '<option value="">Select Employee</option>';
+    // Initial load
+    loadExpenseHistory();
+  }
 
- employeesList.forEach(emp => {
- const opt = document.createElement('option');
- opt.value = emp.id;
- opt.textContent = `${emp.name} (${emp.role || 'Personnel'})`;
- pExpEmployee.appendChild(opt);
+  function handleCategoryChange() {
+    const cat = expCategory.value;
+    expType.disabled = false;
+    expType.innerHTML = '<option value="">-- Select Type --</option>';
 
- const filterOpt = document.createElement('option');
- filterOpt.value = emp.id;
- filterOpt.textContent = emp.name;
- personalEmpFilter.appendChild(filterOpt);
- });
- } catch (err) {
- showToast('Error loading employees: ' + err.message, 'error');
- }
- }
+    if (cat === 'vehicle') {
+      panelVehicle.style.display = 'block';
+      panelPersonal.style.display = 'none';
+      expVehicleNumber.required = true;
+      expPersonName.required = false;
+      expPersonName.value = '';
 
- // Load Summary Stats
- async function loadSummary() {
- try {
- const summary = await window.api.getExpensesSummary();
- summaryTodayTotal.textContent = '₹' + (summary.todayTotal || 0).toFixed(2);
- summaryVehicleToday.textContent = '₹' + (summary.vehicleToday || 0).toFixed(2);
- summaryPersonalToday.textContent = '₹' + (summary.personalToday || 0).toFixed(2);
- summaryMonthlyTotal.textContent = '₹' + (summary.monthlyTotal || 0).toFixed(2);
- } catch (err) {
- console.error('Error loading expenses summary:', err);
- }
- }
+      vehicleTypes.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        expType.appendChild(opt);
+      });
+    } else if (cat === 'personal') {
+      panelVehicle.style.display = 'none';
+      panelPersonal.style.display = 'block';
+      expVehicleNumber.required = false;
+      expVehicleNumber.value = '';
+      expPersonName.required = true;
 
- // =============================================================
- // VEHICLE EXPENSES LOGIC
- // =============================================================
+      personalTypes.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        expType.appendChild(opt);
+      });
+    } else {
+      panelVehicle.style.display = 'none';
+      panelPersonal.style.display = 'none';
+      expVehicleNumber.required = false;
+      expPersonName.required = false;
+      expVehicleNumber.value = '';
+      expPersonName.value = '';
+      
+      expType.disabled = true;
+      expType.innerHTML = '<option value="">-- Select Category First --</option>';
+    }
+  }
 
- async function loadVehicleExpenses() {
- try {
- const filters = {
- search: vehicleSearch.value.trim(),
- from_date: vehicleFromDate.value,
- to_date: vehicleToDate.value
- };
- const data = await window.api.getVehicleExpenses(filters);
- renderVehicleExpenses(data);
- } catch (err) {
- showToast('Error loading vehicle expenses: ' + err.message, 'error');
- }
- }
+  // Load and Render Expense Log list
+  async function loadExpenseHistory() {
+    try {
+      const list = await window.api.getExpenses({});
+      renderHistoryLog(list);
+    } catch (err) {
+      showToast('Error loading expense records: ' + err.message, 'error');
+    }
+  }
 
- function renderVehicleExpenses(items) {
- vehicleTableBody.innerHTML = '';
- if (items.length === 0) {
- vehicleTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No vehicle expenses found.</td></tr>';
- return;
- }
+  function renderHistoryLog(items) {
+    vehicleExpensesBody.innerHTML = '';
+    personalExpensesBody.innerHTML = '';
 
- items.forEach(item => {
- const tr = document.createElement('tr');
- const formattedDate = new Date(item.date).toLocaleDateString('en-IN', {
- day: '2-digit', month: '2-digit', year: 'numeric'
- });
+    const vehicleItems = items.filter(i => i.expense_category === 'vehicle');
+    const personalItems = items.filter(i => i.expense_category === 'personal');
 
- tr.innerHTML = `
- <td>${formattedDate}</td>
- <td><strong>${escapeHtml(item.vehicle_number)}</strong></td>
- <td>₹${parseFloat(item.fuel_expense || 0).toFixed(2)}</td>
- <td>₹${parseFloat(item.tn_snacks_expense || 0).toFixed(2)}</td>
- <td>₹${parseFloat(item.other_expense || 0).toFixed(2)}</td>
- <td><strong>₹${parseFloat(item.total || 0).toFixed(2)}</strong></td>
- <td>${escapeHtml(item.remarks || '-')}</td>
-  <td class="actions-col">
-  <div class="table-actions">
-  <button class="btn btn-action btn-edit btn-edit-v" data-id="${item.id}">Edit</button>
-  <button class="btn btn-action btn-delete btn-delete-v" data-id="${item.id}" data-num="${escapeHtml(item.vehicle_number)}">Delete</button>
-  </div>
-  </td>
- `;
+    // Render Vehicle Expenses
+    if (vehicleItems.length === 0) {
+      vehicleExpensesBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No vehicle expenses found.</td></tr>';
+    } else {
+      vehicleItems.forEach(item => {
+        const tr = document.createElement('tr');
+        const d = new Date(item.expense_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        tr.innerHTML = `
+          <td>${d}</td>
+          <td><strong>${escapeHtml(item.vehicle_number)}</strong></td>
+          <td>${escapeHtml(item.expense_type)}</td>
+          <td><strong>₹${parseFloat(item.amount || 0).toFixed(2)}</strong></td>
+          <td>${escapeHtml(item.remarks || '-')}</td>
+          <td class="actions-col">
+            <div class="table-actions">
+              <button class="btn btn-action btn-edit btn-edit-exp" data-id="${item.id}">Edit</button>
+              <button class="btn btn-action btn-delete btn-delete-exp" data-id="${item.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        tr.querySelector('.btn-edit-exp').addEventListener('click', () => populateEditForm(item));
+        tr.querySelector('.btn-delete-exp').addEventListener('click', () => handleDeleteExpense(item.id));
+        vehicleExpensesBody.appendChild(tr);
+      });
+    }
 
- tr.querySelector('.btn-edit-v').addEventListener('click', () => openVehicleEdit(item));
- tr.querySelector('.btn-delete-v').addEventListener('click', () => deleteVehicleExpense(item.id, item.vehicle_number));
- vehicleTableBody.appendChild(tr);
- });
- }
+    // Render Personal Expenses
+    if (personalItems.length === 0) {
+      personalExpensesBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No personal expenses found.</td></tr>';
+    } else {
+      personalItems.forEach(item => {
+        const tr = document.createElement('tr');
+        const d = new Date(item.expense_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        tr.innerHTML = `
+          <td>${d}</td>
+          <td><strong>${escapeHtml(item.person_name)}</strong></td>
+          <td>${escapeHtml(item.expense_type)}</td>
+          <td><strong>₹${parseFloat(item.amount || 0).toFixed(2)}</strong></td>
+          <td>${escapeHtml(item.remarks || '-')}</td>
+          <td class="actions-col">
+            <div class="table-actions">
+              <button class="btn btn-action btn-edit btn-edit-exp" data-id="${item.id}">Edit</button>
+              <button class="btn btn-action btn-delete btn-delete-exp" data-id="${item.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        tr.querySelector('.btn-edit-exp').addEventListener('click', () => populateEditForm(item));
+        tr.querySelector('.btn-delete-exp').addEventListener('click', () => handleDeleteExpense(item.id));
+        personalExpensesBody.appendChild(tr);
+      });
+    }
+  }
 
- // Add / Edit Vehicle Expense
- btnAddVehicleExpense.addEventListener('click', () => {
- vehicleExpenseForm.reset();
- vehicleExpenseId.value = '';
- vExpDate.value = getTodayString();
- vehicleModal.style.display = 'flex';
- document.getElementById('vehicle-modal-title').textContent = ' Add Vehicle Expense';
- });
+  // Form Submit (Add/Update)
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+    const id = expenseId.value;
+    const date = expDate.value;
+    const category = expCategory.value;
+    const type = expType.value;
+    const amount = parseFloat(expAmount.value);
+    const remarks = expRemarks.value.trim();
 
- function openVehicleEdit(item) {
- vehicleExpenseId.value = item.id;
- vExpDate.value = item.date;
- vExpNumber.value = item.vehicle_number;
- vExpFuel.value = item.fuel_expense;
- vExpSnacks.value = item.tn_snacks_expense;
- vExpOther.value = item.other_expense;
- vExpRemarks.value = item.remarks;
- vehicleModal.style.display = 'flex';
- document.getElementById('vehicle-modal-title').textContent = ' Edit Vehicle Expense';
- }
+    if (!date || !category || !type || isNaN(amount)) {
+      showToast('Please fill all required fields.', 'error');
+      return;
+    }
+    if (amount < 0) {
+      showToast('Amount must be positive.', 'error');
+      return;
+    }
 
- function closeVehicleModal() {
- vehicleModal.style.display = 'none';
- }
- btnCloseVehicleModal.addEventListener('click', closeVehicleModal);
- btnCancelVehicleModal.addEventListener('click', closeVehicleModal);
+    const payload = {
+      expense_category: category,
+      expense_date: date,
+      vehicle_number: category === 'vehicle' ? expVehicleNumber.value.trim().toUpperCase() : null,
+      person_name: category === 'personal' ? expPersonName.value : null,
+      expense_type: type,
+      amount,
+      remarks
+    };
 
- vehicleExpenseForm.addEventListener('submit', async (e) => {
- e.preventDefault();
- const id = vehicleExpenseId.value;
- const date = vExpDate.value;
- const vehicle_number = vExpNumber.value.trim();
- const fuel_expense = parseFloat(vExpFuel.value) || 0;
- const tn_snacks_expense = parseFloat(vExpSnacks.value) || 0;
- const other_expense = parseFloat(vExpOther.value) || 0;
- const remarks = vExpRemarks.value.trim();
+    // Sub-validations
+    if (category === 'vehicle' && !payload.vehicle_number) {
+      showToast('Vehicle number is required.', 'error');
+      return;
+    }
+    if (category === 'personal' && !payload.person_name) {
+      showToast('Person name is required.', 'error');
+      return;
+    }
 
- const data = { date, vehicle_number, fuel_expense, tn_snacks_expense, other_expense, remarks };
+    try {
+      let res;
+      if (id) {
+        res = await window.api.updateExpense(parseInt(id), payload);
+      } else {
+        res = await window.api.addExpense(payload);
+      }
 
- try {
- let res;
- if (id) {
- res = await window.api.updateVehicleExpense({ id: parseInt(id), ...data });
- } else {
- res = await window.api.addVehicleExpense(data);
- }
+      if (res.success) {
+        showToast(id ? 'Expense record updated successfully!' : 'Expense record added successfully!');
+        resetExpenseForm();
+        loadExpenseHistory();
+      } else {
+        showToast('Error saving expense: ' + res.error, 'error');
+      }
+    } catch (err) {
+      showToast('System error: ' + err.message, 'error');
+    }
+  }
 
- if (res.success) {
- showToast('Vehicle expense saved successfully!');
- closeVehicleModal();
- await loadSummary();
- await loadVehicleExpenses();
- } else {
- showToast('Error saving: ' + res.error, 'error');
- }
- } catch (err) {
- showToast('System error: ' + err.message, 'error');
- }
- });
+  // Handle Delete Expense
+  async function handleDeleteExpense(id) {
+    if (!confirm('Are you sure you want to delete this expense record?')) return;
+    try {
+      const res = await window.api.deleteExpense(id);
+      if (res.success) {
+        showToast('Expense record deleted.');
+        loadExpenseHistory();
+      } else {
+        showToast('Error deleting expense: ' + res.error, 'error');
+      }
+    } catch (err) {
+      showToast('System error: ' + err.message, 'error');
+    }
+  }
 
- async function deleteVehicleExpense(id, num) {
- if (!confirm(`Are you sure you want to delete vehicle expense for "${num}"?`)) return;
- try {
- const res = await window.api.deleteVehicleExpense(id);
- if (res.success) {
- showToast('Vehicle expense deleted.');
- await loadSummary();
- await loadVehicleExpenses();
- } else {
- showToast('Error deleting: ' + res.error, 'error');
- }
- } catch (err) {
- showToast('System error: ' + err.message, 'error');
- }
- }
+  // Populate Edit Form
+  function populateEditForm(item) {
+    expenseId.value = item.id;
+    expDate.value = item.expense_date;
+    expCategory.value = item.expense_category;
+    
+    // Toggle dynamic controls and populated dropdown
+    handleCategoryChange();
 
- btnVehicleFilter.addEventListener('click', loadVehicleExpenses);
- vehicleSearch.addEventListener('keypress', (e) => {
- if (e.key === 'Enter') loadVehicleExpenses();
- });
+    expType.value = item.expense_type;
+    expAmount.value = item.amount;
+    expRemarks.value = item.remarks;
 
+    if (item.expense_category === 'vehicle') {
+      expVehicleNumber.value = item.vehicle_number;
+    } else {
+      expPersonName.value = item.person_name;
+    }
 
- // =============================================================
- // PERSONAL EXPENSES LOGIC
- // =============================================================
+    expenseFormTitle.textContent = 'Edit Expense Details';
+    btnSubmit.textContent = 'Update Expense';
+    btnCancelEdit.style.display = 'inline-block';
+    formExpenseContainer.classList.add('edit-highlight');
+  }
 
- async function loadPersonalExpenses() {
- try {
- const filters = {
- search: personalSearch.value.trim(),
- employee_id: personalEmpFilter.value ? parseInt(personalEmpFilter.value) : '',
- from_date: personalFromDate.value,
- to_date: personalToDate.value
- };
- const data = await window.api.getPersonalExpenses(filters);
- renderPersonalExpenses(data);
- } catch (err) {
- showToast('Error loading personal expenses: ' + err.message, 'error');
- }
- }
+  // Reset Form
+  function resetExpenseForm() {
+    expenseForm.reset();
+    expenseId.value = '';
+    expDate.value = new Date().toLocaleString('sv').split(' ')[0];
+    
+    panelVehicle.style.display = 'none';
+    panelPersonal.style.display = 'none';
+    expVehicleNumber.required = false;
+    expPersonName.required = false;
 
- function renderPersonalExpenses(items) {
- personalTableBody.innerHTML = '';
- if (items.length === 0) {
- personalTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No personal expenses found.</td></tr>';
- return;
- }
+    expType.disabled = true;
+    expType.innerHTML = '<option value="">-- Select Category First --</option>';
 
- items.forEach(item => {
- const tr = document.createElement('tr');
- const formattedDate = new Date(item.date).toLocaleDateString('en-IN', {
- day: '2-digit', month: '2-digit', year: 'numeric'
- });
-
- tr.innerHTML = `
- <td>${formattedDate}</td>
- <td><strong>${escapeHtml(item.employee_name)}</strong> <span style="font-size:11px;color:var(--text-muted);">(${escapeHtml(item.employee_role || 'Worker')})</span></td>
- <td>${escapeHtml(item.description)}</td>
- <td><strong>₹${parseFloat(item.amount || 0).toFixed(2)}</strong></td>
- <td>${escapeHtml(item.remarks || '-')}</td>
-  <td class="actions-col">
-  <div class="table-actions">
-  <button class="btn btn-action btn-edit btn-edit-p" data-id="${item.id}">Edit</button>
-  <button class="btn btn-action btn-delete btn-delete-p" data-id="${item.id}" data-emp="${escapeHtml(item.employee_name)}">Delete</button>
-  </div>
-  </td>
- `;
-
- tr.querySelector('.btn-edit-p').addEventListener('click', () => openPersonalEdit(item));
- tr.querySelector('.btn-delete-p').addEventListener('click', () => deletePersonalExpense(item.id, item.employee_name));
- personalTableBody.appendChild(tr);
- });
- }
-
- // Add / Edit Personal Expense
- btnAddPersonalExpense.addEventListener('click', () => {
- personalExpenseForm.reset();
- personalExpenseId.value = '';
- pExpDate.value = getTodayString();
- personalModal.style.display = 'flex';
- document.getElementById('personal-modal-title').textContent = ' Add Personal Expense';
- });
-
- function openPersonalEdit(item) {
- personalExpenseId.value = item.id;
- pExpDate.value = item.date;
- pExpEmployee.value = item.employee_id;
- pExpDesc.value = item.description;
- pExpAmount.value = item.amount;
- pExpRemarks.value = item.remarks;
- personalModal.style.display = 'flex';
- document.getElementById('personal-modal-title').textContent = ' Edit Personal Expense';
- }
-
- function closePersonalModal() {
- personalModal.style.display = 'none';
- }
- btnClosePersonalModal.addEventListener('click', closePersonalModal);
- btnCancelPersonalModal.addEventListener('click', closePersonalModal);
-
- personalExpenseForm.addEventListener('submit', async (e) => {
- e.preventDefault();
- const id = personalExpenseId.value;
- const date = pExpDate.value;
- const employee_id = parseInt(pExpEmployee.value);
- const description = pExpDesc.value.trim();
- const amount = parseFloat(pExpAmount.value) || 0;
- const remarks = pExpRemarks.value.trim();
-
- if (!employee_id) {
- showToast('Please select an employee.', 'error');
- return;
- }
-
- const data = { employee_id, date, description, amount, remarks };
-
- try {
- let res;
- if (id) {
- res = await window.api.updatePersonalExpense({ id: parseInt(id), ...data });
- } else {
- res = await window.api.addPersonalExpense(data);
- }
-
- if (res.success) {
- showToast('Personal expense saved successfully!');
- closePersonalModal();
- await loadSummary();
- await loadPersonalExpenses();
- } else {
- showToast('Error saving: ' + res.error, 'error');
- }
- } catch (err) {
- showToast('System error: ' + err.message, 'error');
- }
- });
-
- async function deletePersonalExpense(id, emp) {
- if (!confirm(`Are you sure you want to delete personal expense for "${emp}"?`)) return;
- try {
- const res = await window.api.deletePersonalExpense(id);
- if (res.success) {
- showToast('Personal expense deleted.');
- await loadSummary();
- await loadPersonalExpenses();
- } else {
- showToast('Error deleting: ' + res.error, 'error');
- }
- } catch (err) {
- showToast('System error: ' + err.message, 'error');
- }
- }
-
- btnPersonalFilter.addEventListener('click', loadPersonalExpenses);
- personalSearch.addEventListener('keypress', (e) => {
- if (e.key === 'Enter') loadPersonalExpenses();
- });
+    expenseFormTitle.textContent = 'Add New Expense';
+    btnSubmit.textContent = 'Add Expense';
+    btnCancelEdit.style.display = 'none';
+    formExpenseContainer.classList.remove('edit-highlight');
+  }
 });

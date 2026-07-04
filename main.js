@@ -51,6 +51,14 @@ function getTodayString() {
  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Helper: local ISO string YYYY-MM-DDTHH:MM:SS
+function getLocalISOString(dateInput) {
+  if (dateInput) {
+    return dateInput.includes('T') ? dateInput : dateInput + 'T00:00:00';
+  }
+  return new Date().toLocaleString('sv').replace(' ', 'T');
+}
+
 // Helper: generate receipt number RCP-YYYY-NNNN
 async function generateReceiptNumber() {
  const year = new Date().getFullYear();
@@ -175,8 +183,8 @@ ipcMain.handle('db:addStock', async (event, { material_id, quantity, supplier_na
  const material = await db.queryOne('SELECT name FROM materials WHERE id = ?', [material_id]);
  if (!material) return { success: false, error: 'Material not found.' };
 
- const timestamp = date ? new Date(date).toISOString() : new Date().toISOString();
- const addedBy = currentUserSession ? currentUserSession.name : 'Admin';
+  const timestamp = getLocalISOString(date);
+  const addedBy = currentUserSession ? currentUserSession.name : 'Admin';
 
  await db.run('BEGIN TRANSACTION');
  try {
@@ -212,9 +220,9 @@ ipcMain.handle('db:stockOut', async (event, {
  return { success: false, error: `Insufficient stock! ${material.name} only has ${material.current_stock} ${material.unit} available (requested: ${quantity}).` };
  }
 
- const timestamp = date ? new Date(date).toISOString() : new Date().toISOString();
- const doneBy = currentUserSession ? currentUserSession.name : 'Admin';
- const now = new Date().toISOString();
+  const timestamp = getLocalISOString(date);
+  const doneBy = currentUserSession ? currentUserSession.name : 'Admin';
+  const now = getLocalISOString();
 
  await db.run('BEGIN TRANSACTION');
  try {
@@ -307,11 +315,8 @@ ipcMain.handle('db:getStockMovements', async (event, filters) => {
  if (filters) {
  if (filters.material_id) { sql += ' AND sm.material_id = ?'; params.push(filters.material_id); }
  if (filters.movement_type && filters.movement_type !== 'All') { sql += ' AND sm.movement_type = ?'; params.push(filters.movement_type); }
- if (filters.from_date) { sql += ' AND sm.created_at >= ?'; params.push(new Date(filters.from_date).toISOString()); }
- if (filters.to_date) {
- const to = new Date(filters.to_date); to.setHours(23, 59, 59, 999);
- sql += ' AND sm.created_at <= ?'; params.push(to.toISOString());
- }
+  if (filters.from_date) { sql += ' AND date(sm.created_at) >= date(?)'; params.push(filters.from_date); }
+  if (filters.to_date) { sql += ' AND date(sm.created_at) <= date(?)'; params.push(filters.to_date); }
  }
  sql += ' ORDER BY sm.created_at DESC, sm.id DESC';
  return await db.query(sql, params);
@@ -329,7 +334,7 @@ ipcMain.handle('db:deleteStockMovement', async (event, id) => {
 
  await db.run('BEGIN TRANSACTION');
  try {
- const now = new Date().toISOString();
+ const now = getLocalISOString();
  await db.run('UPDATE stock_movements SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
 
  // Reverse stock level based on stock_direction or fallback
@@ -402,7 +407,7 @@ ipcMain.handle('db:getCustomerById', async (event, id) => {
 
 ipcMain.handle('db:deleteCustomer', async (event, id) => {
  try {
- const now = new Date().toISOString();
+ const now = getLocalISOString();
  await db.run('UPDATE customers SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
  return { success: true };
  } catch (err) { return { success: false, error: err.message }; }
@@ -411,7 +416,7 @@ ipcMain.handle('db:deleteCustomer', async (event, id) => {
 ipcMain.handle('db:addCustomer', async (event, { name, phone, address, customer_type }) => {
  try {
  if (!name) return { success: false, error: 'Customer name is required.' };
- const now = new Date().toISOString();
+ const now = getLocalISOString();
  const result = await db.run(
  'INSERT INTO customers (name, phone, address, total_purchases, balance_amount, customer_type, created_at) VALUES (?, ?, ?, 0, 0, ?, ?)',
  [name, phone || '', address || '', customer_type || 'Retailer', now]
@@ -459,11 +464,8 @@ ipcMain.handle('db:getReceipts', async (event, filters) => {
  const params = [];
  if (filters) {
  if (filters.customer_name) { sql += ' AND r.customer_name LIKE ?'; params.push(`%${filters.customer_name}%`); }
- if (filters.from_date) { sql += ' AND COALESCE(r.receipt_date, r.created_at) >= ?'; params.push(new Date(filters.from_date).toISOString()); }
- if (filters.to_date) {
- const to = new Date(filters.to_date); to.setHours(23, 59, 59, 999);
- sql += ' AND COALESCE(r.receipt_date, r.created_at) <= ?'; params.push(to.toISOString());
- }
+ if (filters.from_date) { sql += ' AND date(COALESCE(r.receipt_date, r.created_at)) >= date(?)'; params.push(filters.from_date); }
+ if (filters.to_date) { sql += ' AND date(COALESCE(r.receipt_date, r.created_at)) <= date(?)'; params.push(filters.to_date); }
  }
  sql += ' ORDER BY COALESCE(r.receipt_date, r.created_at) DESC';
  return await db.query(sql, params);
@@ -496,7 +498,7 @@ ipcMain.handle('db:deleteReceipt', async (event, id) => {
 
  await db.run('BEGIN TRANSACTION');
  try {
- const now = new Date().toISOString();
+ const now = getLocalISOString();
  // 1. Soft delete receipt
  await db.run('UPDATE receipts SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
 
@@ -578,8 +580,8 @@ ipcMain.handle('db:addPayment', async (event, { receipt_id, amount, remarks, dat
  return { success: false, error: `Payment amount (₹${amount.toFixed(2)}) exceeds remaining balance (₹${remaining.toFixed(2)}).` };
  }
 
- const timestamp = date ? new Date(date).toISOString() : new Date().toISOString();
- const now = new Date().toISOString();
+ const timestamp = getLocalISOString(date);
+ const now = getLocalISOString();
 
  await db.run('BEGIN TRANSACTION');
  try {
@@ -816,6 +818,100 @@ ipcMain.handle('db:saveCompanySettings', async (event, { company_name, address, 
  } catch (err) { return { success: false, error: err.message }; }
 });
 
+ipcMain.handle('db:addExpense', async (event, data) => {
+  try {
+    if (!data.expense_category || !data.expense_date || !data.expense_type || data.amount === undefined) {
+      return { success: false, error: 'Required fields are missing.' };
+    }
+    if (parseFloat(data.amount) < 0) {
+      return { success: false, error: 'Amount cannot be negative.' };
+    }
+    await db.addExpense(data);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('db:updateExpense', async (event, { id, data }) => {
+  try {
+    if (!id || !data.expense_category || !data.expense_date || !data.expense_type || data.amount === undefined) {
+      return { success: false, error: 'Required fields are missing.' };
+    }
+    if (parseFloat(data.amount) < 0) {
+      return { success: false, error: 'Amount cannot be negative.' };
+    }
+    await db.updateExpense(id, data);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('db:deleteExpense', async (event, id) => {
+  try {
+    if (!id) return { success: false, error: 'ID is required.' };
+    await db.deleteExpense(id);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('db:getExpenses', async (event, filters) => {
+  try {
+    return await db.getExpenses(filters);
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+});
+
+ipcMain.handle('db:getExpenseSummary', async (event, filters) => {
+  try {
+    return await db.getExpenseSummary(filters);
+  } catch (err) {
+    console.error(err);
+    return { vehicleTotal: 0, personalTotal: 0, totalExpenses: 0 };
+  }
+});
+
+ipcMain.handle('db:getVehicleExpenseBreakdown', async (event, filters) => {
+  try {
+    return await db.getVehicleExpenseBreakdown(filters);
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+});
+
+ipcMain.handle('db:getPersonalExpenseBreakdown', async (event, filters) => {
+  try {
+    return await db.getPersonalExpenseBreakdown(filters);
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+});
+
+ipcMain.handle('db:getDailyExpenseSummary', async (event, filters) => {
+  try {
+    return await db.getDailyExpenseSummary(filters);
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+});
+
+ipcMain.handle('db:getMonthlyExpenseTrend', async (event, filters) => {
+  try {
+    return await db.getMonthlyExpenseTrend(filters);
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+});
+
 // =============================================================
 // IPC – EMPLOYEES & EXPENSES
 // =============================================================
@@ -1043,8 +1139,8 @@ ipcMain.handle('db:getDashboardStats', async () => {
 
 ipcMain.handle('db:getReportsData', async (event, { from_date, to_date }) => {
  try {
- const fromISO = new Date(from_date).toISOString().split('T')[0];
- const toISO = new Date(to_date).toISOString().split('T')[0];
+ const fromISO = from_date;
+ const toISO = to_date;
 
  // 1. Sales Report Queries
  const salesTotal = await db.queryOne(

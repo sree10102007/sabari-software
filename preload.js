@@ -80,6 +80,17 @@ contextBridge.exposeInMainWorld('api', {
  deletePersonalExpense: (id) => ipcRenderer.invoke('db:deletePersonalExpense', id),
  getExpensesSummary: () => ipcRenderer.invoke('db:getExpensesSummary'),
 
+ // Unified Expenses
+ addExpense: (data) => ipcRenderer.invoke('db:addExpense', data),
+ updateExpense: (id, data) => ipcRenderer.invoke('db:updateExpense', { id, data }),
+ deleteExpense: (id) => ipcRenderer.invoke('db:deleteExpense', id),
+ getExpenses: (filters) => ipcRenderer.invoke('db:getExpenses', filters),
+ getExpenseSummary: (filters) => ipcRenderer.invoke('db:getExpenseSummary', filters),
+ getVehicleExpenseBreakdown: (filters) => ipcRenderer.invoke('db:getVehicleExpenseBreakdown', filters),
+ getPersonalExpenseBreakdown: (filters) => ipcRenderer.invoke('db:getPersonalExpenseBreakdown', filters),
+ getDailyExpenseSummary: (filters) => ipcRenderer.invoke('db:getDailyExpenseSummary', filters),
+ getMonthlyExpenseTrend: (filters) => ipcRenderer.invoke('db:getMonthlyExpenseTrend', filters),
+
  // Shell openPath helper
  openPath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
 
