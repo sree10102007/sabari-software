@@ -40,34 +40,32 @@ document.addEventListener('DOMContentLoaded', () => {
  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No customers yet. Add your first customer!</td></tr>';
  return;
  }
- customers.forEach(c => {
- const purchaseTotal = c.receipt_id ? c.purchase_total : c.total_purchases;
- const purchaseBalance = c.receipt_id ? c.purchase_balance : c.balance_amount;
- const hasBalance = parseFloat(purchaseBalance || 0) > 0;
- 
- const tr = document.createElement('tr');
- // Normalize legacy 'Direct Customer' to 'Retailer' for display
- const displayType = (c.customer_type === 'Direct Customer') ? 'Retailer' : (c.customer_type || 'Retailer');
- const isEngineer = displayType === 'Engineer';
- tr.innerHTML = `
- <td style="color:var(--text-muted);font-size:12px;">${c.id}</td>
- <td>
- <strong>${escapeHtml(c.name)}</strong>
- ${c.receipt_number ? `<br><span style="font-size:11px;color:var(--text-muted);">${escapeHtml(c.receipt_number)} (${new Date(c.receipt_date).toLocaleDateString('en-IN')})</span>` : ''}
- </td>
- <td><span class="status-badge ${isEngineer ? 'approved' : 'pending'}">${escapeHtml(displayType)}</span></td>
- <td>${escapeHtml(c.phone || '-')}</td>
- <td style="font-size:12px;">${escapeHtml(c.address || '-')}</td>
- <td><strong>&#8377;${parseFloat(purchaseTotal || 0).toFixed(2)}</strong></td>
- <td style="color:${hasBalance ? 'var(--danger-color)' : 'var(--success-color)'};font-weight:700;">&#8377;${parseFloat(purchaseBalance || 0).toFixed(2)}</td>
-  <td class="actions-col">
-  <div class="table-actions">
-  <button class="btn btn-action btn-history btn-view-history" data-id="${c.id}" data-name="${escapeHtml(c.name)}">History</button>
-  <button class="btn btn-action btn-edit btn-edit-cust" data-id="${c.id}">Edit</button>
-  <a href="stock-out.html" class="btn btn-action btn-sale" style="text-decoration:none;">Sale</a>
-  <button class="btn btn-action btn-delete btn-delete-cust" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Delete</button>
-  </div>
-  </td>
+  customers.forEach(c => {
+    const purchaseTotal = c.total_purchases || 0;
+    const purchaseBalance = c.balance_amount || 0;
+    const hasBalance = parseFloat(purchaseBalance || 0) > 0;
+    const lastSaleDate = c.last_sale_date ? new Date(c.last_sale_date).toLocaleDateString('en-IN') : '-';
+    
+    const tr = document.createElement('tr');
+    // Normalize legacy 'Direct Customer' to 'Retailer' for display
+    const displayType = (c.customer_type === 'Direct Customer') ? 'Retailer' : (c.customer_type || 'Retailer');
+    const isEngineer = displayType === 'Engineer';
+    tr.innerHTML = `
+      <td><strong>${escapeHtml(c.name)}</strong></td>
+      <td><span class="status-badge ${isEngineer ? 'approved' : 'pending'}">${escapeHtml(displayType)}</span></td>
+      <td>${escapeHtml(c.phone || '-')}</td>
+      <td style="font-size:12px;">${escapeHtml(c.address || '-')}</td>
+      <td>${lastSaleDate}</td>
+      <td><strong>&#8377;${parseFloat(purchaseTotal).toFixed(2)}</strong></td>
+      <td style="color:${hasBalance ? 'var(--danger-color)' : 'var(--success-color)'};font-weight:700;">&#8377;${parseFloat(purchaseBalance).toFixed(2)}</td>
+      <td class="actions-col">
+      <div class="table-actions">
+      <button class="btn btn-action btn-history btn-view-history" data-id="${c.id}" data-name="${escapeHtml(c.name)}">History</button>
+      <button class="btn btn-action btn-edit btn-edit-cust" data-id="${c.id}">Edit</button>
+      <a href="stock-out.html" class="btn btn-action btn-sale" style="text-decoration:none;">Sale</a>
+      <button class="btn btn-action btn-delete btn-delete-cust" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Delete</button>
+      </div>
+      </td>
   `;
  
  const viewHistoryBtn = tr.querySelector('.btn-view-history');
@@ -133,32 +131,83 @@ document.addEventListener('DOMContentLoaded', () => {
  }
  });
 
- // View history
- async function viewHistory(id, name) {
- document.getElementById('history-modal-title').textContent = ` Purchase History — ${name}`;
- document.getElementById('history-table-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>';
- document.getElementById('history-modal').style.display = 'flex';
+  // View history
+  async function viewHistory(id, name) {
+    document.getElementById('history-modal-title').textContent = ` Purchase History — ${name}`;
+    document.getElementById('history-table-body').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>';
+    document.getElementById('history-modal').style.display = 'flex';
 
- const history = await window.api.getCustomerHistory(id);
- const tbody = document.getElementById('history-table-body');
- tbody.innerHTML = '';
- if (!history.length) {
- tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No purchases recorded yet.</td></tr>';
- return;
- }
- history.forEach(r => {
- const hasBalance = parseFloat(r.balance_amount) > 0;
- tbody.innerHTML += `
- <tr>
- <td><strong style="color:var(--primary-color)">${escapeHtml(r.receipt_number)}</strong></td>
- <td style="font-size:12px;">${new Date(r.created_at).toLocaleDateString('en-IN')}</td>
- <td>₹${parseFloat(r.total_amount || 0).toFixed(2)}</td>
- <td style="color:var(--success-color)">₹${parseFloat(r.paid_amount || 0).toFixed(2)}</td>
- <td style="color:${hasBalance ? 'var(--danger-color)' : 'var(--success-color)'}">₹${parseFloat(r.balance_amount || 0).toFixed(2)}</td>
- <td style="font-size:12px;">${escapeHtml(r.materials || '-')}</td>
- </tr>`;
- });
- }
+    const history = await window.api.getCustomerHistory(id);
+    const tbody = document.getElementById('history-table-body');
+    tbody.innerHTML = '';
+    if (!history.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">No purchases recorded yet.</td></tr>';
+      return;
+    }
+    history.forEach(r => {
+      const hasBalance = parseFloat(r.balance_amount) > 0;
+      const paidAmount = parseFloat(r.paid_amount || 0);
+      const balanceAmount = parseFloat(r.balance_amount || 0);
+      const date = r.receipt_date ? new Date(r.receipt_date).toLocaleDateString('en-IN') : '-';
+      
+      let statusLabel = 'Unpaid';
+      let statusClass = 'pending';
+      if (balanceAmount === 0) {
+        statusLabel = 'Paid';
+        statusClass = 'available';
+      } else if (paidAmount > 0) {
+        statusLabel = 'Partial';
+        statusClass = 'low-stock';
+      }
+
+      const printBtn = `<button class="btn btn-secondary btn-sm" onclick="window.viewReceiptPdf('${r.receipt_id}', '${escapeHtml(r.pdf_path || '')}')">View</button>`;
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${date}</td>
+          <td><strong style="color:var(--primary-color)">${escapeHtml(r.receipt_number)}</strong></td>
+          <td>${escapeHtml(r.material_name || '-')}</td>
+          <td><strong>${r.quantity || 0} ${escapeHtml(r.unit || '')}</strong></td>
+          <td>₹${parseFloat(r.total_amount || 0).toFixed(2)}</td>
+          <td style="color:var(--success-color)">₹${paidAmount.toFixed(2)}</td>
+          <td style="color:${hasBalance ? 'var(--danger-color)' : 'var(--success-color)'}">₹${balanceAmount.toFixed(2)}</td>
+          <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+          <td>${printBtn}</td>
+        </tr>`;
+    });
+  }
+
+  window.viewReceiptPdf = async (receiptId, existingPath) => {
+    let shouldGenerate = !existingPath || existingPath === 'null' || existingPath === 'undefined';
+    if (existingPath && !shouldGenerate) {
+      const exists = await window.api.fileExists(existingPath);
+      if (!exists) {
+        shouldGenerate = true;
+      }
+    }
+
+    if (shouldGenerate) {
+      try {
+        const res = await window.api.generatePDF({ receiptId: parseInt(receiptId) });
+        if (res.success) {
+          await window.api.openPath(res.filePath);
+        } else {
+          alert('PDF Generation failed: ' + res.error);
+        }
+      } catch (err) {
+        alert('Error generating PDF: ' + err.message);
+      }
+    } else {
+      try {
+        const res = await window.api.openPath(existingPath);
+        if (!res.success) {
+          alert('Could not open file: ' + res.error);
+        }
+      } catch (err) {
+        alert('Error opening file: ' + err.message);
+      }
+    }
+  };
 
  function closeHistoryModal() {
  document.getElementById('history-modal').style.display = 'none';

@@ -524,14 +524,14 @@ async function getExpenseSummary(filters = {}) {
   const paramsPer = [];
 
   if (filters.from_date) {
-    sqlVeh += ` AND date(expense_date) >= date(?)`;
-    sqlPer += ` AND date(expense_date) >= date(?)`;
+    sqlVeh += ` AND DATE(COALESCE(expense_date, created_at)) >= DATE(?)`;
+    sqlPer += ` AND DATE(COALESCE(expense_date, created_at)) >= DATE(?)`;
     paramsVeh.push(filters.from_date);
     paramsPer.push(filters.from_date);
   }
   if (filters.to_date) {
-    sqlVeh += ` AND date(expense_date) <= date(?)`;
-    sqlPer += ` AND date(expense_date) <= date(?)`;
+    sqlVeh += ` AND DATE(COALESCE(expense_date, created_at)) <= DATE(?)`;
+    sqlPer += ` AND DATE(COALESCE(expense_date, created_at)) <= DATE(?)`;
     paramsVeh.push(filters.to_date);
     paramsPer.push(filters.to_date);
   }
@@ -579,16 +579,16 @@ async function getVehicleExpenseBreakdown(filters = {}) {
            SUM(CASE WHEN expense_type = 'Maintenance' THEN amount ELSE 0 END) as maintenance_expense,
            SUM(CASE WHEN expense_type = 'Loading / Unloading' THEN amount ELSE 0 END) as loading_expense,
            SUM(CASE WHEN expense_type = 'Other' THEN amount ELSE 0 END) as other_expense
-    FROM expenses
-    WHERE (is_deleted = 0 OR is_deleted IS NULL) AND expense_category = 'vehicle'
+     FROM expenses
+     WHERE (is_deleted = 0 OR is_deleted IS NULL) AND expense_category = 'vehicle'
   `;
   const params = [];
   if (filters.from_date) {
-    sql += ` AND date(expense_date) >= date(?)`;
+    sql += ` AND DATE(COALESCE(expense_date, created_at)) >= DATE(?)`;
     params.push(filters.from_date);
   }
   if (filters.to_date) {
-    sql += ` AND date(expense_date) <= date(?)`;
+    sql += ` AND DATE(COALESCE(expense_date, created_at)) <= DATE(?)`;
     params.push(filters.to_date);
   }
   if (filters.vehicle_number) {
@@ -613,16 +613,16 @@ async function getPersonalExpenseBreakdown(filters = {}) {
            SUM(CASE WHEN expense_type = 'Office Expense' THEN amount ELSE 0 END) as office_expense,
            SUM(CASE WHEN expense_type = 'Salary / Allowance' THEN amount ELSE 0 END) as salary_allowance,
            SUM(CASE WHEN expense_type = 'Other' THEN amount ELSE 0 END) as other_expense
-    FROM expenses
-    WHERE (is_deleted = 0 OR is_deleted IS NULL) AND expense_category = 'personal'
+     FROM expenses
+     WHERE (is_deleted = 0 OR is_deleted IS NULL) AND expense_category = 'personal'
   `;
   const params = [];
   if (filters.from_date) {
-    sql += ` AND date(expense_date) >= date(?)`;
+    sql += ` AND DATE(COALESCE(expense_date, created_at)) >= DATE(?)`;
     params.push(filters.from_date);
   }
   if (filters.to_date) {
-    sql += ` AND date(expense_date) <= date(?)`;
+    sql += ` AND DATE(COALESCE(expense_date, created_at)) <= DATE(?)`;
     params.push(filters.to_date);
   }
   if (filters.person_name) {
@@ -639,20 +639,20 @@ async function getPersonalExpenseBreakdown(filters = {}) {
 
 async function getDailyExpenseSummary(filters = {}) {
   let sql = `
-    SELECT expense_date as exp_date,
+    SELECT DATE(COALESCE(expense_date, created_at)) as exp_date,
            SUM(CASE WHEN expense_category = 'vehicle' THEN amount ELSE 0 END) as vehicle_total,
            SUM(CASE WHEN expense_category = 'personal' THEN amount ELSE 0 END) as personal_total,
            SUM(amount) as total
-    FROM expenses
-    WHERE (is_deleted = 0 OR is_deleted IS NULL)
+     FROM expenses
+     WHERE (is_deleted = 0 OR is_deleted IS NULL)
   `;
   const params = [];
   if (filters.from_date) {
-    sql += ` AND date(expense_date) >= date(?)`;
+    sql += ` AND DATE(COALESCE(expense_date, created_at)) >= DATE(?)`;
     params.push(filters.from_date);
   }
   if (filters.to_date) {
-    sql += ` AND date(expense_date) <= date(?)`;
+    sql += ` AND DATE(COALESCE(expense_date, created_at)) <= DATE(?)`;
     params.push(filters.to_date);
   }
   if (filters.expense_category && filters.expense_category !== 'All') {
@@ -671,26 +671,26 @@ async function getDailyExpenseSummary(filters = {}) {
     sql += ` AND expense_type = ?`;
     params.push(filters.expense_type);
   }
-  sql += ` GROUP BY expense_date ORDER BY expense_date DESC LIMIT 30`;
+  sql += ` GROUP BY exp_date ORDER BY exp_date DESC LIMIT 30`;
   return await query(sql, params);
 }
 
 async function getMonthlyExpenseTrend(filters = {}) {
   let sql = `
-    SELECT strftime('%Y-%m', expense_date) as exp_month,
+    SELECT strftime('%Y-%m', COALESCE(expense_date, created_at)) as exp_month,
            SUM(CASE WHEN expense_category = 'vehicle' THEN amount ELSE 0 END) as vehicle_total,
            SUM(CASE WHEN expense_category = 'personal' THEN amount ELSE 0 END) as personal_total,
            SUM(amount) as total
-    FROM expenses
-    WHERE (is_deleted = 0 OR is_deleted IS NULL)
+     FROM expenses
+     WHERE (is_deleted = 0 OR is_deleted IS NULL)
   `;
   const params = [];
   if (filters.from_date) {
-    sql += ` AND date(expense_date) >= date(?)`;
+    sql += ` AND DATE(COALESCE(expense_date, created_at)) >= DATE(?)`;
     params.push(filters.from_date);
   }
   if (filters.to_date) {
-    sql += ` AND date(expense_date) <= date(?)`;
+    sql += ` AND DATE(COALESCE(expense_date, created_at)) <= DATE(?)`;
     params.push(filters.to_date);
   }
   if (filters.expense_category && filters.expense_category !== 'All') {
@@ -713,6 +713,311 @@ async function getMonthlyExpenseTrend(filters = {}) {
   return await query(sql, params);
 }
 
+// --- REPORTS DATABASE FUNCTIONS ---
+
+function buildDateFilters(dateExpr, filters, where, params) {
+  if (filters.fromDate) {
+    where.push(`DATE(${dateExpr}) >= DATE(?)`);
+    params.push(filters.fromDate);
+  }
+  if (filters.toDate) {
+    where.push(`DATE(${dateExpr}) <= DATE(?)`);
+    params.push(filters.toDate);
+  }
+}
+
+async function getSalesReport(filters) {
+  let where = ["(r.is_deleted = 0 OR r.is_deleted IS NULL)"];
+  let params = [];
+  buildDateFilters("COALESCE(r.receipt_date, r.created_at)", filters, where, params);
+  
+  let sql = `
+    SELECT 
+      COALESCE(r.receipt_date, r.created_at) as date,
+      r.receipt_number,
+      r.customer_name,
+      COALESCE(r.customer_type, c.customer_type, 'Retailer') as customer_type,
+      COALESCE(ri.material_name, '-') as material_name,
+      COALESCE(ri.quantity, 0) as quantity,
+      COALESCE(ri.unit, '') as unit,
+      r.total_amount,
+      r.paid_amount,
+      r.balance_amount
+    FROM receipts r
+    LEFT JOIN receipt_items ri ON ri.receipt_id = r.id
+    LEFT JOIN customers c ON r.customer_id = c.id
+    WHERE ${where.join(" AND ")}
+    ORDER BY DATE(COALESCE(r.receipt_date, r.created_at)) DESC, r.id DESC
+  `;
+  const rows = await query(sql, params);
+
+  let summaryWhere = ["(is_deleted = 0 OR is_deleted IS NULL)"];
+  let summaryParams = [];
+  buildDateFilters("COALESCE(receipt_date, created_at)", filters, summaryWhere, summaryParams);
+
+  const salesSum = await queryOne(`
+    SELECT 
+      SUM(total_amount) as total_revenue,
+      SUM(paid_amount) as total_paid,
+      SUM(balance_amount) as total_balance
+    FROM receipts
+    WHERE ${summaryWhere.join(" AND ")}
+  `, summaryParams);
+
+  const qtySum = await queryOne(`
+    SELECT SUM(ri.quantity) as total_qty
+    FROM receipt_items ri
+    JOIN receipts r ON ri.receipt_id = r.id
+    WHERE ${summaryWhere.map(c => c.replace(/(receipt_date|created_at)/g, "r.$1")).join(" AND ")}
+  `, summaryParams);
+
+  return {
+    rows: rows,
+    summary: {
+      totalRevenue: salesSum?.total_revenue || 0,
+      totalQtySold: qtySum?.total_qty || 0,
+      totalPaid: salesSum?.total_paid || 0,
+      totalBalance: salesSum?.total_balance || 0
+    }
+  };
+}
+
+async function getStockReport(filters) {
+  let where = ["(sm.is_deleted = 0 OR sm.is_deleted IS NULL)"];
+  let params = [];
+  buildDateFilters("sm.created_at", filters, where, params);
+
+  let sql = `
+    SELECT 
+      sm.created_at as date,
+      COALESCE(m.name, 'Unknown Material') as material_name,
+      sm.movement_type,
+      sm.quantity,
+      COALESCE(m.unit, '') as material_unit,
+      COALESCE(NULLIF(sm.supplier_name, ''), NULLIF(sm.customer_name, ''), NULLIF(sm.engineer_name, ''), '-') as customer_supplier,
+      sm.total_amount as amount,
+      sm.remarks
+    FROM stock_movements sm
+    LEFT JOIN materials m ON sm.material_id = m.id
+    WHERE ${where.join(" AND ")}
+    ORDER BY DATE(sm.created_at) DESC, sm.id DESC
+  `;
+  const rows = await query(sql, params);
+
+  const stockInSum = await queryOne(`
+    SELECT SUM(sm.quantity) as total
+    FROM stock_movements sm
+    WHERE ${where.join(" AND ")} AND (sm.stock_direction = 'IN' OR sm.movement_type = 'Stock In' OR sm.movement_type = 'Adjustment')
+  `, params);
+
+  const stockOutSum = await queryOne(`
+    SELECT SUM(sm.quantity) as total
+    FROM stock_movements sm
+    WHERE ${where.join(" AND ")} AND (sm.stock_direction = 'OUT' OR sm.movement_type IN ('Stock Out', 'Customer Sale', 'Sale', 'Site Usage', 'Damaged Stock'))
+  `, params);
+
+  return {
+    rows: rows,
+    summary: {
+      totalStockIn: stockInSum?.total || 0,
+      totalStockOut: stockOutSum?.total || 0
+    }
+  };
+}
+
+async function getReceiptReport(filters) {
+  let where = ["(r.is_deleted = 0 OR r.is_deleted IS NULL)"];
+  let params = [];
+  buildDateFilters("COALESCE(r.receipt_date, r.created_at)", filters, where, params);
+
+  let sql = `
+    SELECT 
+      r.receipt_number,
+      COALESCE(r.receipt_date, r.created_at) as receipt_date,
+      r.customer_name,
+      COALESCE(r.customer_type, c.customer_type, 'Retailer') as customer_type,
+      r.total_amount,
+      r.paid_amount,
+      r.balance_amount
+    FROM receipts r
+    LEFT JOIN customers c ON r.customer_id = c.id
+    WHERE ${where.join(" AND ")}
+    ORDER BY DATE(COALESCE(r.receipt_date, r.created_at)) DESC, r.id DESC
+  `;
+  const rows = await query(sql, params);
+
+  const receiptSum = await queryOne(`
+    SELECT 
+      SUM(r.total_amount) as total_amount,
+      SUM(r.paid_amount) as total_paid,
+      SUM(r.balance_amount) as total_balance
+    FROM receipts r
+    WHERE ${where.join(" AND ")}
+  `, params);
+
+  return {
+    rows: rows,
+    summary: {
+      totalAmount: receiptSum?.total_amount || 0,
+      totalPaid: receiptSum?.total_paid || 0,
+      totalBalance: receiptSum?.total_balance || 0
+    }
+  };
+}
+
+async function getExpenseReport(filters) {
+  let where = ["(is_deleted = 0 OR is_deleted IS NULL)"];
+  let params = [];
+  buildDateFilters("COALESCE(expense_date, created_at)", filters, where, params);
+
+  let sql = `
+    SELECT 
+      COALESCE(expense_date, created_at) as expense_date,
+      expense_category,
+      COALESCE(NULLIF(vehicle_number, ''), NULLIF(person_name, ''), '-') as vehicle_or_person,
+      expense_type,
+      amount,
+      remarks
+    FROM expenses
+      WHERE ${where.join(" AND ")}
+    ORDER BY DATE(COALESCE(expense_date, created_at)) DESC, id DESC
+  `;
+  const rows = await query(sql, params);
+
+  const expenseSum = await queryOne(`
+    SELECT 
+      SUM(CASE WHEN expense_category = 'vehicle' THEN amount ELSE 0 END) as vehicle_total,
+      SUM(CASE WHEN expense_category = 'personal' THEN amount ELSE 0 END) as personal_total,
+      SUM(amount) as total_expenses
+    FROM expenses
+    WHERE ${where.join(" AND ")}
+  `, params);
+
+  return {
+    rows: rows,
+    summary: {
+      vehicleTotal: expenseSum?.vehicle_total || 0,
+      personalTotal: expenseSum?.personal_total || 0,
+      totalExpenses: expenseSum?.total_expenses || 0
+    }
+  };
+}
+
+async function getCustomerReport(filters) {
+  let receiptJoinCondition = "r.customer_id = c.id AND (r.is_deleted = 0 OR r.is_deleted IS NULL)";
+  let joinParams = [];
+  if (filters.fromDate) {
+    receiptJoinCondition += " AND DATE(COALESCE(r.receipt_date, r.created_at)) >= DATE(?)";
+    joinParams.push(filters.fromDate);
+  }
+  if (filters.toDate) {
+    receiptJoinCondition += " AND DATE(COALESCE(r.receipt_date, r.created_at)) <= DATE(?)";
+    joinParams.push(filters.toDate);
+  }
+
+  let sql = `
+    SELECT 
+      c.name as customer_name,
+      c.phone,
+      c.customer_type,
+      CASE 
+        WHEN COUNT(r.id) > 0 THEN SUM(r.total_amount)
+        ELSE COALESCE(c.total_purchases, 0)
+      END as total_purchases,
+      CASE 
+        WHEN COUNT(r.id) > 0 THEN SUM(r.paid_amount)
+        ELSE COALESCE(c.total_purchases - c.balance_amount, 0)
+      END as total_paid,
+      CASE 
+        WHEN COUNT(r.id) > 0 THEN SUM(r.balance_amount)
+        ELSE COALESCE(c.balance_amount, 0)
+      END as total_balance,
+      COALESCE(MAX(COALESCE(r.receipt_date, r.created_at)), c.created_at) as last_purchase_date
+    FROM customers c
+    LEFT JOIN receipts r ON ${receiptJoinCondition}
+    WHERE (c.is_deleted = 0 OR c.is_deleted IS NULL)
+    GROUP BY c.id, c.name, c.phone, c.customer_type, c.total_purchases, c.balance_amount, c.created_at
+    ORDER BY total_purchases DESC, c.name ASC
+  `;
+  const rows = await query(sql, joinParams);
+
+  const customerSum = await queryOne(`
+    SELECT 
+      COUNT(id) as total_customers,
+      SUM(total_purchases) as total_purchases,
+      SUM(balance_amount) as total_balance
+    FROM customers
+    WHERE (is_deleted = 0 OR is_deleted IS NULL)
+  `);
+
+  return {
+    rows: rows,
+    summary: {
+      totalCustomers: customerSum?.total_customers || 0,
+      totalPurchases: customerSum?.total_purchases || 0,
+      totalBalance: customerSum?.total_balance || 0
+    }
+  };
+}
+
+async function getLowStockReport(filters) {
+  let where = ["(is_deleted = 0 OR is_deleted IS NULL)", "current_stock <= minimum_stock"];
+  let params = [];
+  if (filters.fromDate) {
+    where.push("DATE(created_at) >= DATE(?)");
+    params.push(filters.fromDate);
+  }
+  if (filters.toDate) {
+    where.push("DATE(created_at) <= DATE(?)");
+    params.push(filters.toDate);
+  }
+
+  let sql = `
+    SELECT 
+      name as material_name,
+      current_stock,
+      minimum_stock,
+      unit,
+      CASE 
+        WHEN current_stock <= 0 THEN 'Out of Stock'
+        ELSE 'Low Stock'
+      END as status
+    FROM materials
+    WHERE ${where.join(" AND ")}
+    ORDER BY name ASC
+  `;
+  const rows = await query(sql, params);
+
+  const lowStockSum = await queryOne(`
+    SELECT 
+      SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock,
+      SUM(CASE WHEN current_stock > 0 AND current_stock <= minimum_stock THEN 1 ELSE 0 END) as low_stock
+    FROM materials
+    WHERE (is_deleted = 0 OR is_deleted IS NULL) AND current_stock <= minimum_stock
+  `);
+
+  return {
+    rows: rows,
+    summary: {
+      outOfStockCount: lowStockSum?.out_of_stock || 0,
+      lowStockCount: lowStockSum?.low_stock || 0,
+      totalLowStock: (lowStockSum?.out_of_stock || 0) + (lowStockSum?.low_stock || 0)
+    }
+  };
+}
+
+async function getReportData(reportType, filters = {}) {
+  switch (reportType) {
+    case 'sales': return await getSalesReport(filters);
+    case 'stock': return await getStockReport(filters);
+    case 'receipts': return await getReceiptReport(filters);
+    case 'expenses': return await getExpenseReport(filters);
+    case 'customers': return await getCustomerReport(filters);
+    case 'low-stock': return await getLowStockReport(filters);
+    default: throw new Error(`Unknown report type: ${reportType}`);
+  }
+}
+
 module.exports = {
   db,
   dbPath,
@@ -727,5 +1032,6 @@ module.exports = {
   getVehicleExpenseBreakdown,
   getPersonalExpenseBreakdown,
   getDailyExpenseSummary,
-  getMonthlyExpenseTrend
+  getMonthlyExpenseTrend,
+  getReportData
 };

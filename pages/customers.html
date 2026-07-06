@@ -22,7 +22,8 @@
  <li class="menu-item"><a href="receipts.html">Receipts</a></li>
  <li class="menu-item"><a href="expenses.html">Expense</a></li>
  <li class="menu-item"><a href="reports.html">Reports</a></li>
- <li class="menu-item"><a href="settings.html">Settings</a></li>
+   <li class="menu-item"><a href="#" id="notepad-link">Notepad</a></li>
+<li class="menu-item"><a href="settings.html">Settings</a></li>
  </ul>
  <div class="sidebar-footer">
  <div class="user-profile"><span class="profile-name" id="user-display-name">Admin</span><span class="profile-role">Administrator</span></div>
@@ -85,7 +86,7 @@
  <div style="overflow-x:auto;max-height:calc(100vh - 280px);overflow-y:auto;">
  <table class="data-table" id="customers-table">
  <thead>
- <tr><th>#</th><th>Name</th><th>Type</th><th>Phone</th><th>Address</th><th>Total Purchases</th><th>Balance</th><th class="actions-col">Actions</th></tr>
+ <tr><th>Name</th><th>Customer Type</th><th>Phone</th><th>Address</th><th>Last Sale Date</th><th>Total Purchases (₹)</th><th>Balance Outstanding (₹)</th><th class="actions-col">Actions</th></tr>
  </thead>
  <tbody id="customers-table-body">
  <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading customers...</td></tr>
@@ -101,7 +102,7 @@
  <!-- CUSTOMER HISTORY MODAL -->
  <!-- CUSTOMER HISTORY MODAL -->
  <div class="modal-backdrop" id="history-modal">
- <div class="modal-content" style="max-width:700px;">
+ <div class="modal-content" style="max-width:900px;">
  <div class="modal-header">
  <h3 id="history-modal-title"> Customer History</h3>
  <button type="button" class="modal-close" id="btn-close-history">×</button>
@@ -109,7 +110,7 @@
  <div class="modal-body">
  <div id="history-modal-body" style="max-height:400px;overflow-y:auto;">
  <table class="data-table">
- <thead><tr><th>Receipt No.</th><th>Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Materials</th></tr></thead>
+ <thead><tr><th>Date</th><th>Receipt No.</th><th>Material/Product</th><th>Quantity</th><th>Total Amount</th><th>Paid Amount</th><th>Balance Amount</th><th>Payment Status</th><th>Actions</th></tr></thead>
  <tbody id="history-table-body">
  <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
  </tbody>

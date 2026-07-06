@@ -28,6 +28,21 @@ document.addEventListener('DOMContentLoaded', async () => {
  window.location.href = 'login.html';
  });
  }
+
+  const notepadLink = document.getElementById('notepad-link');
+  if (notepadLink) {
+    notepadLink.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const res = await window.api.openNotepad();
+        if (res && !res.success) {
+          window.showToast(res.error, 'error');
+        }
+      } catch (err) {
+        window.showToast('Error opening Notepad: ' + err.message, 'error');
+      }
+    });
+  }
 });
 
 /**

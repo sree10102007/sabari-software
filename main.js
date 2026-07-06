@@ -242,60 +242,60 @@ ipcMain.handle('db:stockOut', async (event, {
  );
  }
 
- if (existingCust) {
- customerId = existingCust.id;
- await db.run(
- 'UPDATE customers SET total_purchases = total_purchases + ?, balance_amount = balance_amount + ?, customer_type = COALESCE(NULLIF(?, \'\'), customer_type) WHERE id = ?',
- [total_amount || 0, balance_amount || 0, customer_type || '', customerId]
- );
- } else {
- const custResult = await db.run(
- `INSERT INTO customers (name, phone, address, total_purchases, balance_amount, customer_type, created_at)
- VALUES (?, ?, ?, ?, ?, ?, ?)`,
- [customer_name, customer_phone || '', customer_address || '', total_amount || 0, balance_amount || 0, customer_type || 'Retailer', now]
- );
- customerId = custResult.lastInsertRowid;
- }
+  if (existingCust) {
+  customerId = existingCust.id;
+  await db.run(
+  'UPDATE customers SET total_purchases = total_purchases + ?, balance_amount = balance_amount + ?, customer_type = ? WHERE id = ?',
+  [total_amount || 0, balance_amount || 0, customer_type || 'Retailer', customerId]
+  );
+  } else {
+  const custResult = await db.run(
+  `INSERT INTO customers (name, phone, address, total_purchases, balance_amount, customer_type, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  [customer_name, customer_phone || '', customer_address || '', total_amount || 0, balance_amount || 0, customer_type || 'Retailer', now]
+  );
+  customerId = custResult.lastInsertRowid;
+  }
 
- // Reduce stock
- await db.run('UPDATE materials SET current_stock = current_stock - ? WHERE id = ?', [quantity, material_id]);
+  // Reduce stock
+  await db.run('UPDATE materials SET current_stock = current_stock - ? WHERE id = ?', [quantity, material_id]);
 
- // Generate receipt number
- const receiptNumber = await generateReceiptNumber();
+  // Generate receipt number
+  const receiptNumber = await generateReceiptNumber();
 
- // Create receipt
- const receiptResult = await db.run(
- `INSERT INTO receipts (receipt_number, customer_id, customer_name, customer_phone, customer_address, receipt_date, total_amount, paid_amount, balance_amount, remarks, movement_type, created_at)
- VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  [receiptNumber, customerId, customer_name, customer_phone || '', customer_address || '',
-  timestamp, total_amount || 0, paid_amount || 0, balance_amount || 0, remarks || '', customer_type || 'Stock Out', now]
- );
- const receiptId = receiptResult.lastInsertRowid;
+  // Create receipt
+  const receiptResult = await db.run(
+  `INSERT INTO receipts (receipt_number, customer_id, customer_name, customer_phone, customer_address, receipt_date, total_amount, paid_amount, balance_amount, remarks, movement_type, customer_type, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+   [receiptNumber, customerId, customer_name, customer_phone || '', customer_address || '',
+   timestamp, total_amount || 0, paid_amount || 0, balance_amount || 0, remarks || '', customer_type || 'Stock Out', customer_type || 'Retailer', now]
+  );
+  const receiptId = receiptResult.lastInsertRowid;
 
- // Create initial payment in payments history
- if ((paid_amount || 0) > 0) {
- await db.run(
- `INSERT INTO payments (receipt_id, payment_date, amount, remarks, created_at)
- VALUES (?, ?, ?, 'Initial payment', ?)`,
- [receiptId, timestamp, paid_amount, now]
- );
- }
+  // Create initial payment in payments history
+  if ((paid_amount || 0) > 0) {
+  await db.run(
+  `INSERT INTO payments (receipt_id, payment_date, amount, remarks, created_at)
+  VALUES (?, ?, ?, 'Initial payment', ?)`,
+  [receiptId, timestamp, paid_amount, now]
+  );
+  }
 
- // Create receipt item
- await db.run(
- `INSERT INTO receipt_items (receipt_id, material_id, material_name, quantity, unit, rate, total)
- VALUES (?, ?, ?, ?, ?, ?, ?)`,
- [receiptId, material_id, material.name, quantity, material.unit, rate || 0, total_amount || 0]
- );
+  // Create receipt item
+  await db.run(
+  `INSERT INTO receipt_items (receipt_id, material_id, material_name, quantity, unit, rate, total)
+  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  [receiptId, material_id, material.name, quantity, material.unit, rate || 0, total_amount || 0]
+  );
 
- // Log stock movement
- await db.run(
- `INSERT INTO stock_movements (material_id, movement_type, quantity, customer_id, customer_name, receipt_id, rate, total_amount, paid_amount, balance_amount, remarks, created_by, created_at, stock_direction)
- VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OUT')`,
-  [material_id, customer_type || 'Stock Out', quantity, customerId, customer_name,
- receiptId, rate || 0, total_amount || 0, paid_amount || 0, balance_amount || 0,
- remarks || '', doneBy, timestamp]
- );
+  // Log stock movement
+  await db.run(
+  `INSERT INTO stock_movements (material_id, movement_type, quantity, customer_id, customer_name, receipt_id, rate, total_amount, paid_amount, balance_amount, remarks, created_by, created_at, stock_direction, customer_type)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OUT', ?)`,
+   [material_id, customer_type || 'Stock Out', quantity, customerId, customer_name,
+  receiptId, rate || 0, total_amount || 0, paid_amount || 0, balance_amount || 0,
+  remarks || '', doneBy, timestamp, customer_type || 'Retailer']
+  );
 
  await db.run('COMMIT');
  return { success: true, receiptId, receiptNumber };
@@ -373,78 +373,73 @@ ipcMain.handle('db:deleteStockMovement', async (event, id) => {
 // =============================================================
 
 ipcMain.handle('db:getCustomers', async () => {
- try {
- return await db.query(`
- SELECT c.*, r.id as receipt_id, r.receipt_number, r.receipt_date, r.total_amount as purchase_total, r.balance_amount as purchase_balance,
- COALESCE(r.movement_type, 'Customer Sale') as sale_type,
- CASE 
- WHEN r.movement_type = 'Site Usage' THEN 'Engineer'
- ELSE 'Direct Customer'
- END as customer_type
- FROM customers c
- LEFT JOIN receipts r ON r.customer_id = c.id AND (r.is_deleted IS NULL OR r.is_deleted = 0)
- WHERE (c.is_deleted IS NULL OR c.is_deleted = 0)
- ORDER BY c.name ASC
- `);
- } catch (err) { console.error(err); return []; }
+  try {
+    return await db.query(`
+      SELECT c.*, 
+             (SELECT MAX(COALESCE(receipt_date, created_at)) 
+              FROM receipts 
+              WHERE customer_id = c.id AND (is_deleted IS NULL OR is_deleted = 0)) as last_sale_date
+      FROM customers c
+      WHERE (c.is_deleted IS NULL OR c.is_deleted = 0)
+      ORDER BY c.name ASC
+    `);
+  } catch (err) { console.error(err); return []; }
 });
 
 ipcMain.handle('db:getCustomerById', async (event, id) => {
- try {
- return await db.queryOne(`
- SELECT c.*, r.id as receipt_id, r.receipt_number, r.receipt_date, r.total_amount as purchase_total, r.balance_amount as purchase_balance,
- COALESCE(r.movement_type, 'Customer Sale') as sale_type,
- CASE 
- WHEN r.movement_type = 'Site Usage' THEN 'Engineer'
- ELSE 'Direct Customer'
- END as customer_type
- FROM customers c
- LEFT JOIN receipts r ON r.customer_id = c.id AND (r.is_deleted IS NULL OR r.is_deleted = 0)
- WHERE c.id = ? AND (c.is_deleted IS NULL OR c.is_deleted = 0)
- `, [id]);
- } catch (err) { return null; }
+  try {
+    return await db.queryOne(`
+      SELECT c.*,
+             (SELECT MAX(COALESCE(receipt_date, created_at)) 
+              FROM receipts 
+              WHERE customer_id = c.id AND (is_deleted IS NULL OR is_deleted = 0)) as last_sale_date
+      FROM customers c
+      WHERE c.id = ? AND (c.is_deleted IS NULL OR c.is_deleted = 0)
+    `, [id]);
+  } catch (err) { return null; }
 });
 
 ipcMain.handle('db:deleteCustomer', async (event, id) => {
- try {
- const now = getLocalISOString();
- await db.run('UPDATE customers SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
- return { success: true };
- } catch (err) { return { success: false, error: err.message }; }
+  try {
+  const now = getLocalISOString();
+  await db.run('UPDATE customers SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
+  return { success: true };
+  } catch (err) { return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('db:addCustomer', async (event, { name, phone, address, customer_type }) => {
- try {
- if (!name) return { success: false, error: 'Customer name is required.' };
- const now = getLocalISOString();
- const result = await db.run(
- 'INSERT INTO customers (name, phone, address, total_purchases, balance_amount, customer_type, created_at) VALUES (?, ?, ?, 0, 0, ?, ?)',
- [name, phone || '', address || '', customer_type || 'Retailer', now]
- );
- return { success: true, id: result.lastInsertRowid };
- } catch (err) { return { success: false, error: err.message }; }
+  try {
+  if (!name) return { success: false, error: 'Customer name is required.' };
+  const now = getLocalISOString();
+  const result = await db.run(
+  'INSERT INTO customers (name, phone, address, total_purchases, balance_amount, customer_type, created_at) VALUES (?, ?, ?, 0, 0, ?, ?)',
+  [name, phone || '', address || '', customer_type || 'Retailer', now]
+  );
+  return { success: true, id: result.lastInsertRowid };
+  } catch (err) { return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('db:updateCustomer', async (event, { id, name, phone, address, customer_type }) => {
- try {
- if (!id || !name) return { success: false, error: 'ID and name required.' };
- await db.run('UPDATE customers SET name=?, phone=?, address=?, customer_type=? WHERE id=?', [name, phone || '', address || '', customer_type || 'Retailer', id]);
- return { success: true };
- } catch (err) { return { success: false, error: err.message }; }
+  try {
+  if (!id || !name) return { success: false, error: 'ID and name required.' };
+  await db.run('UPDATE customers SET name=?, phone=?, address=?, customer_type=? WHERE id=?', [name, phone || '', address || '', customer_type || 'Retailer', id]);
+  return { success: true };
+  } catch (err) { return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('db:getCustomerHistory', async (event, customerId) => {
- try {
- return await db.query(
- `SELECT r.*, GROUP_CONCAT(ri.material_name) as materials
- FROM receipts r
- LEFT JOIN receipt_items ri ON ri.receipt_id = r.id
- WHERE r.customer_id = ? AND (r.is_deleted IS NULL OR r.is_deleted = 0)
- GROUP BY r.id
- ORDER BY r.created_at DESC`,
- [customerId]
- );
- } catch (err) { console.error(err); return []; }
+  try {
+    return await db.query(
+      `SELECT r.id as receipt_id, r.receipt_number, COALESCE(r.receipt_date, r.created_at) as receipt_date,
+              r.total_amount, r.paid_amount, r.balance_amount, r.pdf_path,
+              ri.material_name, ri.quantity, ri.unit
+       FROM receipts r
+       LEFT JOIN receipt_items ri ON ri.receipt_id = r.id
+       WHERE r.customer_id = ? AND (r.is_deleted IS NULL OR r.is_deleted = 0)
+       ORDER BY COALESCE(r.receipt_date, r.created_at) DESC, r.id DESC`,
+      [customerId]
+    );
+  } catch (err) { console.error(err); return []; }
 });
 
 // =============================================================
@@ -1133,284 +1128,328 @@ ipcMain.handle('db:getDashboardStats', async () => {
  }
 });
 
-// =============================================================
-// IPC – REPORTS
-// =============================================================
-
 ipcMain.handle('db:getReportsData', async (event, { from_date, to_date }) => {
- try {
- const fromISO = from_date;
- const toISO = to_date;
+  try {
+    const fromISO = from_date;
+    const toISO = to_date;
 
- // 1. Sales Report Queries
- const salesTotal = await db.queryOne(
- `SELECT SUM(total_amount) as t FROM receipts 
- WHERE (is_deleted IS NULL OR is_deleted = 0) 
- AND date(receipt_date) >= date(?) AND date(receipt_date) <= date(?)`,
- [fromISO, toISO]
- );
+    // 1. Sales Report Queries
+    const salesTotal = await db.queryOne(
+      `SELECT SUM(total_amount) as t FROM receipts 
+      WHERE (is_deleted IS NULL OR is_deleted = 0) 
+      AND DATE(COALESCE(receipt_date, created_at)) BETWEEN DATE(?) AND DATE(?)`,
+      [fromISO, toISO]
+    );
 
- const qtyTotal = await db.queryOne(
- `SELECT SUM(ri.quantity) as q FROM receipt_items ri
- JOIN receipts r ON ri.receipt_id = r.id
- WHERE (r.is_deleted IS NULL OR r.is_deleted = 0)
- AND date(r.receipt_date) >= date(?) AND date(r.receipt_date) <= date(?)`,
- [fromISO, toISO]
- );
+    const qtyTotal = await db.queryOne(
+      `SELECT SUM(ri.quantity) as q FROM receipt_items ri
+      JOIN receipts r ON ri.receipt_id = r.id
+      WHERE (r.is_deleted IS NULL OR r.is_deleted = 0)
+      AND DATE(COALESCE(r.receipt_date, r.created_at)) BETWEEN DATE(?) AND DATE(?)`,
+      [fromISO, toISO]
+    );
 
- const bestSellers = await db.query(
- `SELECT ri.material_name, SUM(ri.quantity) as total_qty, ri.unit
- FROM receipt_items ri
- JOIN receipts r ON ri.receipt_id = r.id
- WHERE (r.is_deleted IS NULL OR r.is_deleted = 0)
- AND date(r.receipt_date) >= date(?) AND date(r.receipt_date) <= date(?)
- GROUP BY ri.material_name, ri.unit
- ORDER BY total_qty DESC LIMIT 10`,
- [fromISO, toISO]
- );
+    const bestSellers = await db.query(
+      `SELECT ri.material_name, SUM(ri.quantity) as total_qty, ri.unit
+      FROM receipt_items ri
+      JOIN receipts r ON ri.receipt_id = r.id
+      WHERE (r.is_deleted IS NULL OR r.is_deleted = 0)
+      AND DATE(COALESCE(r.receipt_date, r.created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY ri.material_name, ri.unit
+      ORDER BY total_qty DESC LIMIT 10`,
+      [fromISO, toISO]
+    );
 
- const salesByCust = await db.query(
- `SELECT customer_name, SUM(total_amount) as total_sales, COUNT(*) as txn_count
- FROM receipts
- WHERE (is_deleted IS NULL OR is_deleted = 0)
- AND date(receipt_date) >= date(?) AND date(receipt_date) <= date(?)
- GROUP BY customer_name
- ORDER BY total_sales DESC`,
- [fromISO, toISO]
- );
+    const salesByCust = await db.query(
+      `SELECT customer_name, SUM(total_amount) as total_sales, COUNT(*) as txn_count
+      FROM receipts
+      WHERE (is_deleted IS NULL OR is_deleted = 0)
+      AND DATE(COALESCE(receipt_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY customer_name
+      ORDER BY total_sales DESC`,
+      [fromISO, toISO]
+    );
 
- const salesByType = await db.query(
- `SELECT r.movement_type, SUM(r.total_amount) as total_sales
- FROM receipts r
- WHERE (r.is_deleted IS NULL OR r.is_deleted = 0)
- AND date(r.receipt_date) >= date(?) AND date(r.receipt_date) <= date(?)
- GROUP BY r.movement_type`,
- [fromISO, toISO]
- );
+    const salesByType = await db.query(
+      `SELECT r.movement_type, SUM(r.total_amount) as total_sales
+      FROM receipts r
+      WHERE (r.is_deleted IS NULL OR is_deleted = 0)
+      AND DATE(COALESCE(r.receipt_date, r.created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY r.movement_type`,
+      [fromISO, toISO]
+    );
 
- const dailySales = await db.query(
- `SELECT date(receipt_date) as sales_date, SUM(total_amount) as total_sales
- FROM receipts
- WHERE (is_deleted IS NULL OR is_deleted = 0)
- AND date(receipt_date) >= date(?) AND date(receipt_date) <= date(?)
- GROUP BY sales_date
- ORDER BY sales_date ASC`,
- [fromISO, toISO]
- );
+    const dailySales = await db.query(
+      `SELECT DATE(COALESCE(receipt_date, created_at)) as sales_date, SUM(total_amount) as total_sales
+      FROM receipts
+      WHERE (is_deleted IS NULL OR is_deleted = 0)
+      AND DATE(COALESCE(receipt_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY sales_date
+      ORDER BY sales_date ASC`,
+      [fromISO, toISO]
+    );
 
- // 2. Stock Report Queries
- const currentStockList = await db.query(
- `SELECT name, category, current_stock, minimum_stock, unit 
- FROM materials WHERE (is_deleted IS NULL OR is_deleted = 0)
- ORDER BY name ASC`
- );
+    const ledger = await db.query(
+      `SELECT r.receipt_number,
+              COALESCE(r.receipt_date, r.created_at) as receipt_date,
+              r.customer_name,
+              c.customer_type,
+              ri.material_name,
+              ri.quantity,
+              ri.unit,
+              r.total_amount,
+              r.paid_amount,
+              r.balance_amount
+       FROM receipts r
+       LEFT JOIN receipt_items ri ON ri.receipt_id = r.id
+       LEFT JOIN customers c ON r.customer_id = c.id
+       WHERE (r.is_deleted IS NULL OR r.is_deleted = 0)
+         AND DATE(COALESCE(r.receipt_date, r.created_at)) BETWEEN DATE(?) AND DATE(?)
+       ORDER BY COALESCE(r.receipt_date, r.created_at) DESC, r.id DESC`,
+      [fromISO, toISO]
+    );
 
- const lowStockList = await db.query(
- `SELECT name, category, current_stock, minimum_stock, unit 
- FROM materials WHERE (is_deleted IS NULL OR is_deleted = 0) AND current_stock <= minimum_stock
- ORDER BY name ASC`
- );
+    // 2. Stock Report Queries
+    const currentStockList = await db.query(
+      `SELECT name, category, current_stock, minimum_stock, unit 
+      FROM materials WHERE (is_deleted IS NULL OR is_deleted = 0)
+      ORDER BY name ASC`
+    );
 
- const stockAdded = await db.queryOne(
- `SELECT SUM(quantity) as q FROM stock_movements
- WHERE (is_deleted IS NULL OR is_deleted = 0) AND movement_type = 'Stock In'
- AND date(created_at) >= date(?) AND date(created_at) <= date(?)`,
- [fromISO, toISO]
- );
+    const lowStockList = await db.query(
+      `SELECT name, category, current_stock, minimum_stock, unit 
+      FROM materials WHERE (is_deleted IS NULL OR is_deleted = 0) AND current_stock <= minimum_stock
+      ORDER BY name ASC`
+    );
 
- const stockSold = await db.queryOne(
- `SELECT SUM(quantity) as q FROM stock_movements
- WHERE (is_deleted IS NULL OR is_deleted = 0) AND movement_type IN ('Stock Out','Customer Sale','Direct Sale','Site Usage')
- AND date(created_at) >= date(?) AND date(created_at) <= date(?)`,
- [fromISO, toISO]
- );
+    const stockAdded = await db.queryOne(
+      `SELECT SUM(quantity) as q FROM stock_movements
+      WHERE (is_deleted IS NULL OR is_deleted = 0) AND movement_type = 'Stock In'
+      AND DATE(created_at) BETWEEN DATE(?) AND DATE(?)`,
+      [fromISO, toISO]
+    );
 
- const stockMovementsList = await db.query(
- `SELECT sm.*, m.name as material_name, m.unit as material_unit
- FROM stock_movements sm
- JOIN materials m ON sm.material_id = m.id
- WHERE (sm.is_deleted IS NULL OR sm.is_deleted = 0)
- AND date(sm.created_at) >= date(?) AND date(sm.created_at) <= date(?)
- ORDER BY sm.created_at DESC`,
- [fromISO, toISO]
- );
+    const stockSold = await db.queryOne(
+      `SELECT SUM(quantity) as q FROM stock_movements
+      WHERE (is_deleted IS NULL OR is_deleted = 0) 
+      AND movement_type IN ('Stock Out','Customer Sale','Direct Sale','Site Usage','Retailer','Engineer','Sale','Damaged Stock')
+      AND DATE(created_at) BETWEEN DATE(?) AND DATE(?)`,
+      [fromISO, toISO]
+    );
 
- // 3. Customer Report Queries
- const customerList = await db.query(
- `SELECT c.*, 
- (SELECT COUNT(*) FROM receipts WHERE customer_id = c.id AND (is_deleted IS NULL OR is_deleted = 0)) as total_receipts,
- CASE
- WHEN EXISTS (
- SELECT 1 FROM receipts r 
- WHERE r.customer_id = c.id 
- AND r.movement_type = 'Site Usage' 
- AND (r.is_deleted IS NULL OR r.is_deleted = 0)
- ) THEN 'Engineer'
- ELSE 'Direct Customer'
- END AS customer_type
- FROM customers c
- WHERE (c.is_deleted IS NULL OR c.is_deleted = 0)
- ORDER BY c.name ASC`
- );
+    const stockMovementsList = await db.query(
+      `SELECT sm.*, m.name as material_name, m.unit as material_unit
+      FROM stock_movements sm
+      JOIN materials m ON sm.material_id = m.id
+      WHERE (sm.is_deleted IS NULL OR sm.is_deleted = 0)
+      AND DATE(sm.created_at) BETWEEN DATE(?) AND DATE(?)
+      ORDER BY sm.created_at DESC, sm.id DESC`,
+      [fromISO, toISO]
+    );
 
- // 4. Payment Report Queries
- const outstandingTotal = await db.queryOne(
- `SELECT SUM(balance_amount) as t FROM receipts WHERE (is_deleted IS NULL OR is_deleted = 0)`
- );
+    // 3. Customer Report Queries
+    const customerList = await db.query(
+      `SELECT c.*, 
+      (SELECT COUNT(*) FROM receipts WHERE customer_id = c.id AND (is_deleted IS NULL OR is_deleted = 0)) as total_receipts
+      FROM customers c
+      WHERE (c.is_deleted IS NULL OR c.is_deleted = 0)
+      ORDER BY c.name ASC`
+    );
 
- const fullyPaidCount = await db.queryOne(
- `SELECT COUNT(*) as c FROM receipts 
- WHERE (is_deleted IS NULL OR is_deleted = 0) AND balance_amount = 0`
- );
+    // 4. Payment Report Queries
+    const outstandingTotal = await db.queryOne(
+      `SELECT SUM(balance_amount) as t FROM receipts WHERE (is_deleted IS NULL OR is_deleted = 0)`
+    );
 
- const partiallyPaidCount = await db.queryOne(
- `SELECT COUNT(*) as c FROM receipts 
- WHERE (is_deleted IS NULL OR is_deleted = 0) AND balance_amount > 0 AND paid_amount > 0`
- );
+    const fullyPaidCount = await db.queryOne(
+      `SELECT COUNT(*) as c FROM receipts 
+      WHERE (is_deleted IS NULL OR is_deleted = 0) AND balance_amount = 0`
+    );
 
- const pendingCount = await db.queryOne(
- `SELECT COUNT(*) as c FROM receipts 
- WHERE (is_deleted IS NULL OR is_deleted = 0) AND paid_amount = 0`
- );
+    const partiallyPaidCount = await db.queryOne(
+      `SELECT COUNT(*) as c FROM receipts 
+      WHERE (is_deleted IS NULL OR is_deleted = 0) AND balance_amount > 0 AND paid_amount > 0`
+    );
 
- const outstandingCustWise = await db.query(
- `SELECT customer_name, SUM(balance_amount) as total_outstanding, SUM(total_amount) as total_bill
- FROM receipts
- WHERE (is_deleted IS NULL OR is_deleted = 0) AND balance_amount > 0
- GROUP BY customer_name
- ORDER BY total_outstanding DESC`
- );
+    const pendingCount = await db.queryOne(
+      `SELECT COUNT(*) as c FROM receipts 
+      WHERE (is_deleted IS NULL OR is_deleted = 0) AND paid_amount = 0`
+    );
 
- // 5. Expense Report Queries
- const vExpList = await db.query(
- `SELECT *, (fuel_expense + tn_snacks_expense + other_expense) as total 
- FROM vehicle_expenses
- WHERE date(date) >= date(?) AND date(date) <= date(?)
- ORDER BY date DESC`,
- [fromISO, toISO]
- );
+    const outstandingCustWise = await db.query(
+      `SELECT customer_name, SUM(balance_amount) as total_outstanding, SUM(total_amount) as total_bill
+      FROM receipts
+      WHERE (is_deleted IS NULL OR is_deleted = 0) AND balance_amount > 0
+      GROUP BY customer_name
+      ORDER BY total_outstanding DESC`
+    );
 
- const pExpList = await db.query(
- `SELECT pe.*, e.name as employee_name 
- FROM personal_expenses pe
- JOIN employees e ON pe.employee_id = e.id
- WHERE date(pe.date) >= date(?) AND date(pe.date) <= date(?)
- ORDER BY pe.date DESC`,
- [fromISO, toISO]
- );
+    // 5. Expense Report Queries (using the unified expenses table)
+    const vExpList = await db.query(
+      `SELECT *, amount as total 
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'vehicle'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      ORDER BY DATE(COALESCE(expense_date, created_at)) DESC, id DESC`,
+      [fromISO, toISO]
+    );
 
- const vExpTotal = await db.queryOne(
- `SELECT SUM(fuel_expense + tn_snacks_expense + other_expense) as t 
- FROM vehicle_expenses
- WHERE date(date) >= date(?) AND date(date) <= date(?)`,
- [fromISO, toISO]
- );
+    const pExpList = await db.query(
+      `SELECT *, person_name as employee_name 
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'personal'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      ORDER BY DATE(COALESCE(expense_date, created_at)) DESC, id DESC`,
+      [fromISO, toISO]
+    );
 
- const pExpTotal = await db.queryOne(
- `SELECT SUM(amount) as t FROM personal_expenses
- WHERE date(date) >= date(?) AND date(date) <= date(?)`,
- [fromISO, toISO]
- );
+    const vExpTotal = await db.queryOne(
+      `SELECT SUM(amount) as t 
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'vehicle'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)`,
+      [fromISO, toISO]
+    );
 
- const monthlyExpenses = await db.query(
- `SELECT strftime('%Y-%m', date) as exp_month, 
- SUM(fuel_expense + tn_snacks_expense + other_expense) as v_total
- FROM vehicle_expenses
- WHERE date(date) >= date(?) AND date(date) <= date(?)
- GROUP BY exp_month
- ORDER BY exp_month ASC`,
- [fromISO, toISO]
- );
+    const pExpTotal = await db.queryOne(
+      `SELECT SUM(amount) as t 
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'personal'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)`,
+      [fromISO, toISO]
+    );
 
- const pMonthlyExpenses = await db.query(
- `SELECT strftime('%Y-%m', date) as exp_month, SUM(amount) as p_total
- FROM personal_expenses
- WHERE date(date) >= date(?) AND date(date) <= date(?)
- GROUP BY exp_month
- ORDER BY exp_month ASC`,
- [fromISO, toISO]
- );
+    const monthlyExpenses = await db.query(
+      `SELECT strftime('%Y-%m', COALESCE(expense_date, created_at)) as exp_month, 
+              SUM(amount) as v_total
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'vehicle'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY exp_month
+      ORDER BY exp_month ASC`,
+      [fromISO, toISO]
+    );
 
- const dailyExpenses = await db.query(
- `SELECT date as exp_date, SUM(fuel_expense + tn_snacks_expense + other_expense) as v_total
- FROM vehicle_expenses
- WHERE date(date) >= date(?) AND date(date) <= date(?)
- GROUP BY exp_date
- ORDER BY exp_date ASC`,
- [fromISO, toISO]
- );
+    const pMonthlyExpenses = await db.query(
+      `SELECT strftime('%Y-%m', COALESCE(expense_date, created_at)) as exp_month, 
+              SUM(amount) as p_total
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'personal'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY exp_month
+      ORDER BY exp_month ASC`,
+      [fromISO, toISO]
+    );
 
- const pDailyExpenses = await db.query(
- `SELECT date as exp_date, SUM(amount) as p_total
- FROM personal_expenses
- WHERE date(date) >= date(?) AND date(date) <= date(?)
- GROUP BY exp_date
- ORDER BY exp_date ASC`,
- [fromISO, toISO]
- );
+    const dailyExpenses = await db.query(
+      `SELECT DATE(COALESCE(expense_date, created_at)) as exp_date, 
+              SUM(amount) as v_total
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'vehicle'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY exp_date
+      ORDER BY exp_date ASC`,
+      [fromISO, toISO]
+    );
 
- const employeeWise = await db.query(
- `SELECT e.name as employee_name, SUM(pe.amount) as total_expense
- FROM personal_expenses pe
- JOIN employees e ON pe.employee_id = e.id
- WHERE date(pe.date) >= date(?) AND date(pe.date) <= date(?)
- GROUP BY e.name
- ORDER BY total_expense DESC`,
- [fromISO, toISO]
- );
+    const pDailyExpenses = await db.query(
+      `SELECT DATE(COALESCE(expense_date, created_at)) as exp_date, 
+              SUM(amount) as p_total
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'personal'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY exp_date
+      ORDER BY exp_date ASC`,
+      [fromISO, toISO]
+    );
 
- const vehicleWise = await db.query(
- `SELECT vehicle_number, SUM(fuel_expense + tn_snacks_expense + other_expense) as total_expense
- FROM vehicle_expenses
- WHERE date(date) >= date(?) AND date(date) <= date(?)
- GROUP BY vehicle_number
- ORDER BY total_expense DESC`,
- [fromISO, toISO]
- );
+    const employeeWise = await db.query(
+      `SELECT person_name as employee_name, SUM(amount) as total_expense
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'personal'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY person_name
+      ORDER BY total_expense DESC`,
+      [fromISO, toISO]
+    );
 
- return {
- sales: {
- totalSalesAmount: salesTotal?.t || 0,
- totalQtySold: qtyTotal?.q || 0,
- bestSellers,
- salesByCust,
- salesByType,
- dailySales
- },
- stock: {
- currentStock: currentStockList,
- lowStock: lowStockList,
- stockAdded: stockAdded?.q || 0,
- stockSold: stockSold?.q || 0,
- movements: stockMovementsList
- },
- customers: {
- list: customerList
- },
- payments: {
- outstandingAmount: outstandingTotal?.t || 0,
- fullyPaidCount: fullyPaidCount?.c || 0,
- partiallyPaidCount: partiallyPaidCount?.c || 0,
- pendingCount: pendingCount?.c || 0,
- outstandingCustWise
- },
- expenses: {
- vehicleList: vExpList,
- personalList: pExpList,
- vehicleTotal: vExpTotal?.t || 0,
- personalTotal: pExpTotal?.t || 0,
- monthlyExpenses,
- pMonthlyExpenses,
- dailyExpenses,
- pDailyExpenses,
- employeeWise,
- vehicleWise
- }
- };
- } catch (err) {
- console.error(err);
- return null;
- }
+    const vehicleWise = await db.query(
+      `SELECT vehicle_number, SUM(amount) as total_expense
+      FROM expenses
+      WHERE (is_deleted = 0 OR is_deleted IS NULL)
+        AND expense_category = 'vehicle'
+        AND DATE(COALESCE(expense_date, created_at)) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY vehicle_number
+      ORDER BY total_expense DESC`,
+      [fromISO, toISO]
+    );
+
+    // 6. Receipt Report Queries
+    const receiptsList = await db.query(
+      `SELECT r.*
+      FROM receipts r
+      WHERE (r.is_deleted IS NULL OR r.is_deleted = 0)
+        AND DATE(COALESCE(r.receipt_date, r.created_at)) BETWEEN DATE(?) AND DATE(?)
+      ORDER BY COALESCE(r.receipt_date, r.created_at) DESC, r.id DESC`,
+      [fromISO, toISO]
+    );
+
+    return {
+      sales: {
+        totalSalesAmount: salesTotal?.t || 0,
+        totalQtySold: qtyTotal?.q || 0,
+        bestSellers,
+        salesByCust,
+        salesByType,
+        dailySales,
+        ledger
+      },
+      stock: {
+        currentStock: currentStockList,
+        lowStock: lowStockList,
+        stockAdded: stockAdded?.q || 0,
+        stockSold: stockSold?.q || 0,
+        movements: stockMovementsList
+      },
+      customers: {
+        list: customerList
+      },
+      payments: {
+        outstandingAmount: outstandingTotal?.t || 0,
+        fullyPaidCount: fullyPaidCount?.c || 0,
+        partiallyPaidCount: partiallyPaidCount?.c || 0,
+        pendingCount: pendingCount?.c || 0,
+        outstandingCustWise
+      },
+      receipts: {
+        list: receiptsList
+      },
+      expenses: {
+        vehicleList: vExpList,
+        personalList: pExpList,
+        vehicleTotal: vExpTotal?.t || 0,
+        personalTotal: pExpTotal?.t || 0,
+        monthlyExpenses,
+        pMonthlyExpenses,
+        dailyExpenses,
+        pDailyExpenses,
+        employeeWise,
+        vehicleWise
+      }
+    };
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 });
 
 ipcMain.handle('db:getReports', async (event, filters) => {
@@ -1942,3 +1981,25 @@ function buildReceiptHtml({ receipt, items, payments, settings }) {
 </body>
 </html>`;
 }
+
+ipcMain.handle("reports:get-data", async (event, reportType, filters) => {
+  try {
+    return await db.getReportData(reportType, filters);
+  } catch (err) {
+    console.error("reports:get-data error:", err);
+    throw err;
+  }
+});
+
+ipcMain.handle('open-notepad', async () => {
+  if (process.platform !== 'win32') {
+    return { success: false, error: 'Notepad is available only on Windows.' };
+  }
+  try {
+    const { spawn } = require('child_process');
+    spawn('notepad.exe', [], { detached: true, stdio: 'ignore' }).unref();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
