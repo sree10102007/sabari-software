@@ -708,6 +708,10 @@ textarea.form-control {
   backdrop-filter: blur(4px);
 }
 
+.modal-backdrop.show {
+  display: flex;
+}
+
 .modal-content {
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius-lg);
@@ -1382,4 +1386,208 @@ textarea.form-control {
 /* notification pending color */
 .notification.pending {
   background-color: #1565c0;
+}
+
+/* =============================================================
+   RECEIPT DETAIL MODAL — Layout & Sizing
+   ============================================================= */
+
+/* Wider modal for the receipt detail view */
+.receipt-detail-modal-content {
+  width: 100%;
+  max-width: 780px;
+  /* Remove the overflow:hidden so modal-body can scroll */
+  overflow: visible;
+}
+
+/* Scrollable modal body */
+.receipt-detail-modal-body {
+  max-height: calc(90vh - 80px); /* 80px for the modal-header */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  scroll-behavior: smooth;
+}
+
+/* Items table inside receipt detail gets horizontal scroll when narrow */
+.receipt-detail-modal-body .data-table {
+  width: 100%;
+}
+
+.receipt-detail-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 16px;
+}
+
+/* =============================================================
+   RECORD NEW PAYMENT CARD
+   ============================================================= */
+
+.record-payment-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+  border: 1.5px solid #86efac;
+  border-radius: 12px;
+  padding: 20px 24px 24px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.07);
+}
+
+/* Card header: icon + title + balance badge in one row */
+.record-payment-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #bbf7d0;
+}
+
+.record-payment-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.record-payment-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #166534;
+  margin: 0;
+  flex: 1;
+  letter-spacing: 0.2px;
+}
+
+.record-payment-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50px;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+/* 2-column grid for the form fields */
+.record-payment-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  align-items: start;
+}
+
+/* Each field: label on top, input below */
+.rpf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Remarks field spans both columns */
+.rpf-field-full {
+  grid-column: 1 / -1;
+}
+
+.rpf-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.2px;
+}
+
+/* Consistent input height */
+.rpf-input {
+  padding: 9px 12px !important;
+  font-size: 14px !important;
+  height: 40px;
+  border-color: #d1fae5 !important;
+  background-color: #ffffff !important;
+}
+
+.rpf-input:focus {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15) !important;
+}
+
+/* Actions row: alert on left, button on right */
+.rpf-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  flex-wrap: wrap;
+}
+
+/* Error alert inside the form */
+.rpf-alert {
+  display: none;
+  color: var(--danger-color);
+  font-size: 12px;
+  font-weight: 600;
+  background: #fff1f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 6px 12px;
+  flex: 1;
+}
+
+.rpf-alert.show {
+  display: block;
+}
+
+/* Submit button styling */
+.rpf-submit-btn {
+  padding: 10px 22px !important;
+  font-size: 13px !important;
+  height: 40px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Receipt view action footer (Close / PDF / WhatsApp row) */
+.receipt-view-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border-color);
+  padding-top: 14px;
+  margin-top: 10px;
+}
+
+/* =============================================================
+   RESPONSIVE OVERRIDES — small Electron window
+   ============================================================= */
+
+@media (max-width: 860px) {
+  .receipt-detail-modal-content {
+    max-width: 98vw;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Stack payment form to single column on small windows */
+  .record-payment-form {
+    grid-template-columns: 1fr;
+  }
+
+  .rpf-field-full {
+    grid-column: 1;
+  }
+
+  .rpf-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rpf-submit-btn {
+    width: 100% !important;
+  }
 }

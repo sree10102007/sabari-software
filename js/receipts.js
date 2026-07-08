@@ -120,28 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
     </td>
   `;
-
- // Event Listeners on buttons
- tr.querySelector('.receipt-link').addEventListener('click', () => openDetailModal(r.id));
- tr.querySelector('.btn-view-receipt-row').addEventListener('click', () => openDetailModal(r.id));
- tr.querySelector('.btn-update-pay').addEventListener('click', () => openPayUpdateModal(r.id));
- tr.querySelector('.btn-view-pdf').addEventListener('click', () => handlePdfAction(r.id, r.pdf_path));
-
- const waBtn = tr.querySelector('.btn-whatsapp-receipt');
- waBtn.addEventListener('click', () => handleWhatsAppAction(r.id));
-
- const deleteBtn = tr.querySelector('.btn-delete-receipt');
- deleteBtn.addEventListener('click', () => {
- deleteReceipt(parseInt(deleteBtn.dataset.id), deleteBtn.dataset.num);
- });
- 
- if (hasPdf) {
- tr.querySelector('.status-badge.approved').addEventListener('click', () => {
- window.api.openPath(r.pdf_path);
- });
- }
-
- tableBody.appendChild(tr);
+  tableBody.appendChild(tr);
  });
  }
 
@@ -376,36 +355,42 @@ document.addEventListener('DOMContentLoaded', async () => {
  <!-- Payment History Section -->
  ${paymentsHtml}
 
- <!-- Update Payment Form -->
- ${parseFloat(receipt.balance_amount) > 0 ? `
- <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px 16px; margin-bottom:16px;">
- <h4 style="font-size:12px; font-weight:bold; margin:0 0 8px 0; color:var(--text-main);"> Record New Payment</h4>
- <form id="add-payment-form" style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
- <div style="flex:1; min-width:120px;">
- <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Amount (Max ₹${parseFloat(receipt.balance_amount).toFixed(2)}) *</label>
- <input type="number" id="pay-amount" class="form-control" placeholder="e.g., 500" min="0.01" max="${parseFloat(receipt.balance_amount)}" step="0.01" required style="padding:6px 10px;">
- </div>
- <div style="flex:1; min-width:120px;">
- <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Payment Date</label>
- <input type="date" id="pay-date" class="form-control" style="padding:6px 10px;">
- </div>
- <div style="flex:2; min-width:180px;">
- <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Remarks</label>
- <input type="text" id="pay-remarks" class="form-control" placeholder="Remarks (e.g. Cash, GPay)" style="padding:6px 10px;">
- </div>
- <button type="submit" class="btn btn-success" style="padding:8px 14px; height:36px;"> Save</button>
- </form>
- <div id="add-payment-alert" style="display:none; color:var(--danger-color); font-size:12px; margin-top:8px; font-weight:600;"></div>
- </div>
- ` : ''}
+ <!-- Record New Payment Form -->
+  ${parseFloat(receipt.balance_amount) > 0 ? `
+  <div class="record-payment-card">
+  <div class="record-payment-card-header">
+  <span class="record-payment-icon">&#128176;</span>
+  <h4 class="record-payment-title"> Record New Payment</h4>
+  <span class="record-payment-badge">Balance: ₹${parseFloat(receipt.balance_amount).toFixed(2)}</span>
+  </div>
+  <form id="add-payment-form" class="record-payment-form">
+  <div class="rpf-field">
+  <label class="rpf-label">Amount (Max ₹${parseFloat(receipt.balance_amount).toFixed(2)}) <span style="color:var(--danger-color);">*</span></label>
+  <input type="number" id="pay-amount" class="form-control rpf-input" placeholder="e.g., 500" min="0.01" max="${parseFloat(receipt.balance_amount)}" step="0.01" required>
+  </div>
+  <div class="rpf-field">
+  <label class="rpf-label">Payment Date</label>
+  <input type="date" id="pay-date" class="form-control rpf-input">
+  </div>
+  <div class="rpf-field rpf-field-full">
+  <label class="rpf-label">Remarks</label>
+  <input type="text" id="pay-remarks" class="form-control rpf-input" placeholder="e.g. Cash, GPay, Cheque">
+  </div>
+  <div class="rpf-actions">
+  <div id="add-payment-alert" class="rpf-alert"></div>
+  <button type="submit" class="btn btn-success rpf-submit-btn"> Save Payment</button>
+  </div>
+  </form>
+  </div>
+  ` : ''}
 
  <!-- Actions Footer -->
- <div style="display:flex; justify-content:flex-end; gap:8px; border-top:1px solid #e2e8f0; padding-top:14px; margin-top:10px;">
+ <div class="receipt-view-actions">
  <button class="btn btn-secondary modal-detail-close-btn">Close</button>
  <button class="btn btn-primary modal-pdf-btn">
- ${receipt.pdf_path ? ' Open PDF' : ' Generate PDF'}
+ ${receipt.pdf_path ? '&#x1F4C4; Open PDF' : '&#x2B07; Generate PDF'}
  </button>
- <button class="btn btn-success modal-wa-btn"> Send WhatsApp</button>
+ <button class="btn btn-success modal-wa-btn">&#x1F4AC; WhatsApp</button>
  </div>
  </div>
  `;
@@ -430,7 +415,8 @@ document.addEventListener('DOMContentLoaded', async () => {
  payForm.addEventListener('submit', async (e) => {
  e.preventDefault();
  const alertEl = detailBody.querySelector('#add-payment-alert');
- alertEl.style.display = 'none';
+ alertEl.textContent = '';
+ alertEl.classList.remove('show');
 
  const amount = parseFloat(detailBody.querySelector('#pay-amount').value);
  const date = detailBody.querySelector('#pay-date').value;
@@ -438,14 +424,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
  if (!amount || amount <= 0) {
  alertEl.textContent = 'Enter a valid payment amount.';
- alertEl.style.display = 'block';
+ alertEl.classList.add('show');
  return;
  }
 
  const remaining = parseFloat(receipt.balance_amount);
  if (amount > remaining) {
  alertEl.textContent = `Amount cannot exceed remaining balance of ₹${remaining.toFixed(2)}.`;
- alertEl.style.display = 'block';
+ alertEl.classList.add('show');
  return;
  }
 
@@ -458,12 +444,12 @@ document.addEventListener('DOMContentLoaded', async () => {
  loadReceipts();
  } else {
  alertEl.textContent = res.error || 'Failed to save payment.';
- alertEl.style.display = 'block';
+ alertEl.classList.add('show');
  showToast('Failed to save payment.', 'error');
  }
  } catch (err) {
  alertEl.textContent = err.message;
- alertEl.style.display = 'block';
+ alertEl.classList.add('show');
  showToast('System error occurred.', 'error');
  }
  });
@@ -491,7 +477,62 @@ document.addEventListener('DOMContentLoaded', async () => {
  }
  });
 
- // Filter Listeners
+  // Event Delegation on table body for dynamic row elements
+  tableBody.addEventListener('click', async (e) => {
+    // 1. View / Receipt Link click
+    const viewBtn = e.target.closest('.btn-view-receipt-row') || e.target.closest('.receipt-link');
+    if (viewBtn) {
+      const id = parseInt(viewBtn.dataset.id);
+      openDetailModal(id);
+      return;
+    }
+    
+    // 2. WhatsApp click
+    const waBtn = e.target.closest('.btn-whatsapp-receipt');
+    if (waBtn) {
+      const id = parseInt(waBtn.dataset.id);
+      handleWhatsAppAction(id);
+      return;
+    }
+
+    // 3. PDF click
+    const pdfBtn = e.target.closest('.btn-view-pdf');
+    if (pdfBtn) {
+      const id = parseInt(pdfBtn.dataset.id);
+      const path = pdfBtn.dataset.path;
+      handlePdfAction(id, path);
+      return;
+    }
+
+    // 4. Record Payment click
+    const payBtn = e.target.closest('.btn-update-pay');
+    if (payBtn) {
+      const id = parseInt(payBtn.dataset.id);
+      openPayUpdateModal(id);
+      return;
+    }
+
+    // 5. Delete Receipt click
+    const deleteBtn = e.target.closest('.btn-delete-receipt');
+    if (deleteBtn) {
+      const id = parseInt(deleteBtn.dataset.id);
+      const num = deleteBtn.dataset.num;
+      deleteReceipt(id, num);
+      return;
+    }
+
+    // 6. PDF status badge click
+    const approvedBadge = e.target.closest('.status-badge.approved');
+    if (approvedBadge) {
+      const path = approvedBadge.getAttribute('title');
+      if (path) {
+        window.api.openPath(path);
+      }
+      return;
+    }
+  });
+
+  // Filter Listeners
  btnFilter.addEventListener('click', loadReceipts);
  btnClearFilter.addEventListener('click', () => {
  filterCust.value = '';
