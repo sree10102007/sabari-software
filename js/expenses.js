@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td>${d}</td>
           <td><strong>${escapeHtml(item.vehicle_number)}</strong></td>
           <td>${escapeHtml(item.expense_type)}</td>
-          <td><strong>₹${parseFloat(item.amount || 0).toFixed(2)}</strong></td>
+          <td><strong>${formatCurrency(item.amount)}</strong></td>
           <td>${escapeHtml(item.remarks || '-')}</td>
           <td class="actions-col">
             <div class="table-actions">
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td>${d}</td>
           <td><strong>${escapeHtml(item.person_name)}</strong></td>
           <td>${escapeHtml(item.expense_type)}</td>
-          <td><strong>₹${parseFloat(item.amount || 0).toFixed(2)}</strong></td>
+          <td><strong>${formatCurrency(item.amount)}</strong></td>
           <td>${escapeHtml(item.remarks || '-')}</td>
           <td class="actions-col">
             <div class="table-actions">
@@ -189,6 +189,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  function formatCurrency(value) {
+    const amount = Number(value || 0);
+    return `₹${amount.toFixed(2)}`;
+  }
+
+  function parseMoneyInput(value) {
+    const cleaned = String(value ?? "")
+      .replace(/[₹,\s]/g, "")
+      .trim();
+
+    if (cleaned === "") {
+      throw new Error("Amount is required");
+    }
+
+    const amount = Number(cleaned);
+
+    if (!Number.isFinite(amount)) {
+      throw new Error("Invalid amount");
+    }
+
+    if (amount < 0) {
+      throw new Error("Amount cannot be negative");
+    }
+
+    return Math.round((amount + Number.EPSILON) * 100) / 100;
+  }
+
   // Form Submit (Add/Update)
   async function handleFormSubmit(e) {
     e.preventDefault();
@@ -196,15 +223,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const date = expDate.value;
     const category = expCategory.value;
     const type = expType.value;
-    const amount = parseFloat(expAmount.value);
     const remarks = expRemarks.value.trim();
 
-    if (!date || !category || !type || isNaN(amount)) {
-      showToast('Please fill all required fields.', 'error');
+    let amount;
+    try {
+      amount = parseMoneyInput(expAmount.value);
+    } catch (err) {
+      showToast(err.message, 'error');
       return;
     }
-    if (amount < 0) {
-      showToast('Amount must be positive.', 'error');
+
+    if (!date || !category || !type) {
+      showToast('Please fill all required fields.', 'error');
       return;
     }
 
@@ -227,6 +257,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       showToast('Person name is required.', 'error');
       return;
     }
+
+    console.log('[DEBUG expenses.js] raw input:', expAmount.value, '| parsed amount:', amount, typeof amount);
 
     try {
       let res;
@@ -274,13 +306,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     handleCategoryChange();
 
     expType.value = item.expense_type;
-    expAmount.value = item.amount;
-    expRemarks.value = item.remarks;
+    // Load amount cleanly — round to 2 decimal places to fix any SQLite REAL precision artifacts
+    expAmount.value = (Math.round(parseFloat(item.amount || 0) * 100) / 100).toFixed(2);
+    expRemarks.value = item.remarks || '';
 
     if (item.expense_category === 'vehicle') {
-      expVehicleNumber.value = item.vehicle_number;
+      expVehicleNumber.value = item.vehicle_number || '';
     } else {
-      expPersonName.value = item.person_name;
+      expPersonName.value = item.person_name || '';
     }
 
     expenseFormTitle.textContent = 'Edit Expense Details';

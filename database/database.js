@@ -455,26 +455,39 @@ async function initDatabase() {
 // Initialize tables and seed
 initDatabase();
 
+function normalizeMoney(value) {
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount)) {
+    throw new Error("Invalid money value");
+  }
+
+  return Math.round((amount + Number.EPSILON) * 100) / 100;
+}
+
 // --- NEW EXPENSES DATABASE FUNCTIONS ---
 
 async function addExpense(data) {
   const { expense_category, expense_date, vehicle_number, person_name, expense_type, amount, remarks } = data;
   const now = new Date().toISOString();
+  const safeAmount = normalizeMoney(amount);
+  console.log('[DEBUG addExpense DB] raw amount:', amount, '| safeAmount:', safeAmount);
   return await run(
     `INSERT INTO expenses (expense_category, expense_date, vehicle_number, person_name, expense_type, amount, remarks, created_at, updated_at, is_deleted)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-    [expense_category, expense_date, vehicle_number || null, person_name || null, expense_type, amount, remarks || '', now, now]
+    [expense_category, expense_date, vehicle_number || null, person_name || null, expense_type, safeAmount, remarks || '', now, now]
   );
 }
 
 async function updateExpense(id, data) {
   const { expense_category, expense_date, vehicle_number, person_name, expense_type, amount, remarks } = data;
   const now = new Date().toISOString();
+  const safeAmount = normalizeMoney(amount);
   return await run(
     `UPDATE expenses 
      SET expense_category = ?, expense_date = ?, vehicle_number = ?, person_name = ?, expense_type = ?, amount = ?, remarks = ?, updated_at = ?
      WHERE id = ?`,
-    [expense_category, expense_date, vehicle_number || null, person_name || null, expense_type, amount, remarks || '', now, id]
+    [expense_category, expense_date, vehicle_number || null, person_name || null, expense_type, safeAmount, remarks || '', now, id]
   );
 }
 
@@ -514,7 +527,11 @@ async function getExpenses(filters = {}) {
     params.push(filters.expense_type);
   }
   sql += ` ORDER BY expense_date DESC, id DESC`;
-  return await query(sql, params);
+  const rows = await query(sql, params);
+  if (rows.length > 0) {
+    console.log('[DEBUG getExpenses DB] first row amount:', rows[0].amount, typeof rows[0].amount);
+  }
+  return rows;
 }
 
 async function getExpenseSummary(filters = {}) {

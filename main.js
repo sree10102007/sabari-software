@@ -821,6 +821,7 @@ ipcMain.handle('db:addExpense', async (event, data) => {
     if (parseFloat(data.amount) < 0) {
       return { success: false, error: 'Amount cannot be negative.' };
     }
+    console.log('[DEBUG addExpense] amount received in main IPC:', data.amount, typeof data.amount);
     await db.addExpense(data);
     return { success: true };
   } catch (err) {
@@ -836,6 +837,7 @@ ipcMain.handle('db:updateExpense', async (event, { id, data }) => {
     if (parseFloat(data.amount) < 0) {
       return { success: false, error: 'Amount cannot be negative.' };
     }
+    console.log('[DEBUG updateExpense] amount received in main IPC:', data.amount, typeof data.amount);
     await db.updateExpense(id, data);
     return { success: true };
   } catch (err) {
@@ -1081,16 +1083,14 @@ ipcMain.handle('db:getDashboardStats', async () => {
  todaySalesAmount,
  totalOutstanding,
  totalReceipts,
- vExpToday,
- pExpToday
+ todayExpenseVal
  ] = await Promise.all([
  db.queryOne("SELECT SUM(current_stock) as t FROM materials WHERE (is_deleted IS NULL OR is_deleted = 0) AND category = 'Cement'"),
  db.queryOne("SELECT COUNT(*) as c FROM materials WHERE (is_deleted IS NULL OR is_deleted = 0) AND category = 'Cement' AND current_stock <= minimum_stock"),
  db.queryOne("SELECT SUM(total_amount) as t FROM receipts WHERE (is_deleted IS NULL OR is_deleted = 0) AND created_at LIKE ?", [todayPrefix]),
  db.queryOne("SELECT SUM(balance_amount) as t FROM receipts WHERE (is_deleted IS NULL OR is_deleted = 0)"),
  db.queryOne("SELECT COUNT(*) as c FROM receipts WHERE (is_deleted IS NULL OR is_deleted = 0)"),
- db.queryOne("SELECT SUM(fuel_expense + tn_snacks_expense + other_expense) as t FROM vehicle_expenses WHERE date = ?", [today]),
- db.queryOne("SELECT SUM(amount) as t FROM personal_expenses WHERE date = ?", [today])
+ db.queryOne("SELECT SUM(amount) as t FROM expenses WHERE (is_deleted = 0 OR is_deleted IS NULL) AND DATE(COALESCE(expense_date, created_at)) = DATE('now', 'localtime')")
  ]);
 
  const [recentSales, cementStockSummary, lowStockMaterials] = await Promise.all([
@@ -1099,7 +1099,7 @@ ipcMain.handle('db:getDashboardStats', async () => {
  db.query("SELECT name, current_stock, minimum_stock, unit FROM materials WHERE (is_deleted IS NULL OR is_deleted = 0) AND current_stock <= minimum_stock ORDER BY name ASC LIMIT 10")
  ]);
 
- const todayExpenses = (vExpToday?.t || 0) + (pExpToday?.t || 0);
+ const todayExpenses = todayExpenseVal?.t || 0;
 
  return {
  cementBagsAvailable: cementBagsAvailable?.t || 0,

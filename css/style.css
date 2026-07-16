@@ -1392,17 +1392,41 @@ textarea.form-control {
    RECEIPT DETAIL MODAL — Layout & Sizing
    ============================================================= */
 
+/* Override modal-backdrop for receipt detail to ensure it covers sidebar */
+#receipt-detail-modal {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+#receipt-detail-modal.show {
+  display: flex;
+}
+
 /* Wider modal for the receipt detail view */
 .receipt-detail-modal-content {
-  width: 100%;
-  max-width: 780px;
-  /* Remove the overflow:hidden so modal-body can scroll */
-  overflow: visible;
+  width: min(900px, 95vw);
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  border-radius: 16px;
 }
 
 /* Scrollable modal body */
 .receipt-detail-modal-body {
-  max-height: calc(90vh - 80px); /* 80px for the modal-header */
+  max-height: calc(90vh - 70px);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 24px;

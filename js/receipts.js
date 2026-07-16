@@ -355,35 +355,6 @@ document.addEventListener('DOMContentLoaded', async () => {
  <!-- Payment History Section -->
  ${paymentsHtml}
 
- <!-- Record New Payment Form -->
-  ${parseFloat(receipt.balance_amount) > 0 ? `
-  <div class="record-payment-card">
-  <div class="record-payment-card-header">
-  <span class="record-payment-icon">&#128176;</span>
-  <h4 class="record-payment-title"> Record New Payment</h4>
-  <span class="record-payment-badge">Balance: ₹${parseFloat(receipt.balance_amount).toFixed(2)}</span>
-  </div>
-  <form id="add-payment-form" class="record-payment-form">
-  <div class="rpf-field">
-  <label class="rpf-label">Amount (Max ₹${parseFloat(receipt.balance_amount).toFixed(2)}) <span style="color:var(--danger-color);">*</span></label>
-  <input type="number" id="pay-amount" class="form-control rpf-input" placeholder="e.g., 500" min="0.01" max="${parseFloat(receipt.balance_amount)}" step="0.01" required>
-  </div>
-  <div class="rpf-field">
-  <label class="rpf-label">Payment Date</label>
-  <input type="date" id="pay-date" class="form-control rpf-input">
-  </div>
-  <div class="rpf-field rpf-field-full">
-  <label class="rpf-label">Remarks</label>
-  <input type="text" id="pay-remarks" class="form-control rpf-input" placeholder="e.g. Cash, GPay, Cheque">
-  </div>
-  <div class="rpf-actions">
-  <div id="add-payment-alert" class="rpf-alert"></div>
-  <button type="submit" class="btn btn-success rpf-submit-btn"> Save Payment</button>
-  </div>
-  </form>
-  </div>
-  ` : ''}
-
  <!-- Actions Footer -->
  <div class="receipt-view-actions">
  <button class="btn btn-secondary modal-detail-close-btn">Close</button>
@@ -407,53 +378,6 @@ document.addEventListener('DOMContentLoaded', async () => {
  handleWhatsAppAction(receipt.id);
  closeDetailModal();
  });
-
- // Handle payment form submission
- const payForm = detailBody.querySelector('#add-payment-form');
- if (payForm) {
- detailBody.querySelector('#pay-date').valueAsDate = new Date();
- payForm.addEventListener('submit', async (e) => {
- e.preventDefault();
- const alertEl = detailBody.querySelector('#add-payment-alert');
- alertEl.textContent = '';
- alertEl.classList.remove('show');
-
- const amount = parseFloat(detailBody.querySelector('#pay-amount').value);
- const date = detailBody.querySelector('#pay-date').value;
- const remarks = detailBody.querySelector('#pay-remarks').value.trim();
-
- if (!amount || amount <= 0) {
- alertEl.textContent = 'Enter a valid payment amount.';
- alertEl.classList.add('show');
- return;
- }
-
- const remaining = parseFloat(receipt.balance_amount);
- if (amount > remaining) {
- alertEl.textContent = `Amount cannot exceed remaining balance of ₹${remaining.toFixed(2)}.`;
- alertEl.classList.add('show');
- return;
- }
-
- try {
- showToast('Recording payment...', 'pending');
- const res = await window.api.addPayment({ receipt_id: receipt.id, amount, remarks, date });
- if (res.success) {
- showToast(' Payment recorded successfully!');
- openDetailModal(receipt.id);
- loadReceipts();
- } else {
- alertEl.textContent = res.error || 'Failed to save payment.';
- alertEl.classList.add('show');
- showToast('Failed to save payment.', 'error');
- }
- } catch (err) {
- alertEl.textContent = err.message;
- alertEl.classList.add('show');
- showToast('System error occurred.', 'error');
- }
- });
- }
 
  } catch (err) {
  detailBody.innerHTML = `<p style="text-align:center;color:var(--danger-color);padding:30px 0;">Error loading details: ${escapeHtml(err.message)}</p>`;

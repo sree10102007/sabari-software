@@ -124,7 +124,23 @@ document.addEventListener('DOMContentLoaded', () => {
  document.getElementById('edit-mat-id').value = m.id;
  document.getElementById('edit-mat-name').value = m.name;
  document.getElementById('edit-mat-category').value = m.category || '';
- document.getElementById('edit-mat-unit').value = m.unit;
+
+ // Set unit select: if saved unit isn't Bags/Kg (legacy data), add a temporary option
+ const unitSelect = document.getElementById('edit-mat-unit');
+ const knownUnits = ['Bags', 'Kg'];
+ // Remove any previous legacy options first
+ Array.from(unitSelect.options).forEach(opt => { if (opt.dataset.legacy === 'true') opt.remove(); });
+ 
+ if (m.unit && !knownUnits.includes(m.unit)) {
+   // Add legacy unit option temporarily so old data displays correctly
+   const legacyOpt = document.createElement('option');
+   legacyOpt.value = m.unit;
+   legacyOpt.textContent = m.unit + ' (legacy)';
+   legacyOpt.dataset.legacy = 'true';
+   unitSelect.appendChild(legacyOpt);
+ }
+ unitSelect.value = m.unit;
+
  document.getElementById('edit-mat-rate').value = m.rate || 0;
  document.getElementById('edit-mat-minimum').value = m.minimum_stock || 0;
  document.getElementById('edit-mat-alert').style.display = 'none';
