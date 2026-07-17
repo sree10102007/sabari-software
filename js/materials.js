@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
  // Set unit select: if saved unit isn't Bags/Kg (legacy data), add a temporary option
  const unitSelect = document.getElementById('edit-mat-unit');
- const knownUnits = ['Bags', 'Kg'];
+ const knownUnits = ['Bags', 'Kg', 'Packets'];
  // Remove any previous legacy options first
  Array.from(unitSelect.options).forEach(opt => { if (opt.dataset.legacy === 'true') opt.remove(); });
  

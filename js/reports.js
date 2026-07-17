@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const columnsConfig = {
     sales: [
       { label: 'Date', key: 'date', format: 'date' },
-      { label: 'Receipt Number', key: 'receipt_number' },
+      { label: 'Receipt ID', key: 'receipt_number' },
       { label: 'Customer Name', key: 'customer_name' },
       { label: 'Customer Type', key: 'customer_type', format: 'typeBadge' },
       { label: 'Product / Material', key: 'material_name' },
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       { label: 'Remarks', key: 'remarks' }
     ],
     receipts: [
-      { label: 'Receipt Number', key: 'receipt_number' },
+      { label: 'Receipt ID', key: 'receipt_number' },
       { label: 'Receipt Date', key: 'receipt_date', format: 'date' },
       { label: 'Customer Name', key: 'customer_name' },
       { label: 'Customer Type', key: 'customer_type', format: 'typeBadge' },

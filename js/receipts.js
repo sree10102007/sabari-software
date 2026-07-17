@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  }
 
  tr.innerHTML = `
- <td><strong class="receipt-link" style="cursor:pointer;color:var(--primary-color);" data-id="${r.id}">${escapeHtml(r.receipt_number)}</strong></td>
+ <td><strong class="receipt-link" style="cursor:pointer;color:var(--primary-color);" data-id="${r.id}">#${r.id}</strong></td>
  <td>${date}</td>
  <td><strong>${escapeHtml(r.customer_name)}</strong></td>
  <td>${escapeHtml(r.customer_phone || '-')}</td>
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     <button class="btn btn-action btn-whatsapp btn-whatsapp-receipt" data-id="${r.id}" title="Send via WhatsApp">WhatsApp</button>
     <button class="btn btn-action btn-pdf btn-view-pdf" data-id="${r.id}" data-path="${escapeHtml(r.pdf_path || '')}" title="Download PDF">&#8659; PDF</button>
     <button class="btn btn-action btn-payment btn-update-pay" data-id="${r.id}" title="Record Payment">Payment</button>
-    <button class="btn btn-action btn-delete btn-delete-receipt" data-id="${r.id}" data-num="${escapeHtml(r.receipt_number)}" title="Delete Receipt">Delete</button>
+    <button class="btn btn-action btn-delete btn-delete-receipt" data-id="${r.id}" data-num="#${r.id}" title="Delete Receipt">Delete</button>
     </div>
     </td>
   `;
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
  const msg =
  `*${companyName}*\n` +
- `Receipt No: ${receipt.receipt_number}\n` +
+ `Receipt ID: #${receipt.id}\n` +
  `Date: ${date}\n` +
  `Customer: ${receipt.customer_name}\n` +
  `-----------------------------\n` +
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  </div>
  <div style="text-align:right;">
  <div class="status-badge" style="background:var(--primary-color); color:#fff; font-size:11px; font-weight:600; text-transform:uppercase;">${receipt.movement_type || 'Stock Out'}</div>
- <div style="font-size:13px; font-weight:bold; color:var(--text-main); margin-top:6px;">${escapeHtml(receipt.receipt_number)}</div>
+ <div style="font-size:13px; font-weight:bold; color:var(--text-main); margin-top:6px;">#${receipt.id}</div>
  <div style="font-size:11px; color:var(--text-muted);">${new Date(receipt.receipt_date || receipt.created_at).toLocaleString()}</div>
  </div>
  </div>
@@ -473,7 +473,11 @@ document.addEventListener('DOMContentLoaded', async () => {
  });
 
  // Escape HTML helper
- 
+ function escapeHtml(text) {
+ const div = document.createElement('div');
+ div.textContent = text;
+ return div.innerHTML;
+ }
 
  // Payment Update Modal Controls
  const payModal = document.getElementById('update-payment-modal');
@@ -488,7 +492,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  if (!receipt) return;
 
  document.getElementById('pay-receipt-id').value = receipt.id;
- document.getElementById('pay-receipt-num').textContent = receipt.receipt_number;
+ document.getElementById('pay-receipt-num').textContent = '#' + receipt.id;
  document.getElementById('pay-customer-name').textContent = receipt.customer_name;
  document.getElementById('pay-total-bill').textContent = '₹' + parseFloat(receipt.total_amount).toFixed(2);
  document.getElementById('pay-already-paid').textContent = '₹' + parseFloat(receipt.paid_amount).toFixed(2);

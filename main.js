@@ -655,7 +655,7 @@ async function generateReceiptPDF(receiptId) {
 
  printWin.destroy();
 
- const fileName = `${receipt.receipt_number}.pdf`;
+ const fileName = `receipt_${receipt.id}.pdf`;
  const filePath = path.join(receiptsDir, fileName);
  fs.writeFileSync(filePath, pdfData);
 
@@ -1173,7 +1173,7 @@ ipcMain.handle('db:getReportsData', async (event, { from_date, to_date }) => {
     const salesByType = await db.query(
       `SELECT r.movement_type, SUM(r.total_amount) as total_sales
       FROM receipts r
-      WHERE (r.is_deleted IS NULL OR is_deleted = 0)
+      WHERE (r.is_deleted IS NULL OR r.is_deleted = 0)
       AND DATE(COALESCE(r.receipt_date, r.created_at)) BETWEEN DATE(?) AND DATE(?)
       GROUP BY r.movement_type`,
       [fromISO, toISO]
@@ -1190,7 +1190,7 @@ ipcMain.handle('db:getReportsData', async (event, { from_date, to_date }) => {
     );
 
     const ledger = await db.query(
-      `SELECT r.receipt_number,
+      `SELECT r.id as receipt_number,
               COALESCE(r.receipt_date, r.created_at) as receipt_date,
               r.customer_name,
               c.customer_type,
@@ -1922,8 +1922,8 @@ function buildReceiptHtml({ receipt, items, payments, settings }) {
 
  <div class="receipt-meta">
  <div>
- <div class="meta-label">Receipt Number</div>
- <div class="meta-value">${receipt.receipt_number}</div>
+ <div class="meta-label">Receipt ID</div>
+ <div class="meta-value">#${receipt.id}</div>
  </div>
  <div>
  <div class="meta-label">Date &amp; Time</div>

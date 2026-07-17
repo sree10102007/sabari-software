@@ -48,7 +48,10 @@ const run = (sql, params = []) => {
  return new Promise((resolve, reject) => {
  db.run(sql, params, function (err) {
  if (err) {
+ // Suppress duplicate column name migration errors on ALTER TABLE
+ if (!/^\s*ALTER\s+TABLE/i.test(sql)) {
  console.error('SQL error (run):', sql, params, err);
+ }
  reject(err);
  } else {
  resolve({ lastInsertRowid: this.lastID, changes: this.changes });
@@ -751,7 +754,7 @@ async function getSalesReport(filters) {
   let sql = `
     SELECT 
       COALESCE(r.receipt_date, r.created_at) as date,
-      r.receipt_number,
+      r.id as receipt_number,
       r.customer_name,
       COALESCE(r.customer_type, c.customer_type, 'Retailer') as customer_type,
       COALESCE(ri.material_name, '-') as material_name,
@@ -849,7 +852,7 @@ async function getReceiptReport(filters) {
 
   let sql = `
     SELECT 
-      r.receipt_number,
+      r.id as receipt_number,
       COALESCE(r.receipt_date, r.created_at) as receipt_date,
       r.customer_name,
       COALESCE(r.customer_type, c.customer_type, 'Retailer') as customer_type,

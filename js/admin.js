@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  stats.recentSales.forEach(r => {
  salesTbody.innerHTML += `
  <tr>
- <td><strong style="color:var(--primary-color);">${escapeHtml(r.receipt_number)}</strong></td>
+ <td><strong style="color:var(--primary-color);">${r.id}</strong></td>
  <td>${escapeHtml(r.customer_name)}</td>
  <td><strong>₹${parseFloat(r.total_amount || 0).toFixed(2)}</strong></td>
  </tr>`;
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  receipts.slice(0, 8).forEach(r => {
  tbody.innerHTML += `
  <tr>
- <td><strong style="color:var(--primary-color)">${escapeHtml(r.receipt_number)}</strong></td>
+ <td><strong style="color:var(--primary-color)">${r.id}</strong></td>
  <td>${escapeHtml(r.customer_name || '-')}</td>
  <td><strong>₹${parseFloat(r.total_amount || 0).toFixed(2)}</strong></td>
  <td style="font-size:12px;">${new Date(r.created_at).toLocaleDateString('en-IN')}</td>

@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.innerHTML += `
         <tr>
           <td>${date}</td>
-          <td><strong style="color:var(--primary-color)">${escapeHtml(r.receipt_number)}</strong></td>
+          <td><strong style="color:var(--primary-color)">#${r.receipt_id}</strong></td>
           <td>${escapeHtml(r.material_name || '-')}</td>
           <td><strong>${r.quantity || 0} ${escapeHtml(r.unit || '')}</strong></td>
           <td>₹${parseFloat(r.total_amount || 0).toFixed(2)}</td>
