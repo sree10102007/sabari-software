@@ -4,6 +4,27 @@ const fs = require('fs');
 const db = require('./database/database');
 const bcrypt = require('bcryptjs');
 
+// Global error handlers
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception in main process:', error);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Helper: validate and sanitize finite number
+function validateFiniteNumber(val, min = 0, name = 'Number') {
+  const num = Number(val);
+  if (!Number.isFinite(num)) {
+    throw new Error(`${name} must be a valid finite number.`);
+  }
+  if (num < min) {
+    throw new Error(`${name} cannot be less than ${min}.`);
+  }
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
+
 let mainWindow;
 let currentUserSession = null;
 
@@ -130,47 +151,72 @@ ipcMain.handle('db:deleteMaterial', async (event, id) => {
 });
 
 ipcMain.handle('db:addMaterial', async (event, { name, category, unit, current_stock, minimum_stock, rate }) => {
- try {
- if (!name || !unit) return { success: false, error: 'Material name and unit are required.' };
- const allowedCategories = ['Cement', 'Raw Materials'];
- if (category && !allowedCategories.includes(category)) {
- return { success: false, error: 'Invalid category. Allowed categories are Cement and Raw Materials.' };
- }
- const now = new Date().toISOString();
- await db.run('BEGIN TRANSACTION');
- try {
- const result = await db.run(
- `INSERT INTO materials (name, category, unit, current_stock, minimum_stock, rate, created_at)
- VALUES (?, ?, ?, ?, ?, ?, ?)`,
- [name, category || '', unit, current_stock || 0, minimum_stock || 0, rate || 0, now]
- );
- const materialId = result.lastInsertRowid;
- if ((current_stock || 0) > 0) {
- await db.run(
- `INSERT INTO stock_movements (material_id, movement_type, quantity, remarks, created_by, created_at, stock_direction)
- VALUES (?, 'Adjustment', ?, 'Initial stock entry', ?, ?, 'IN')`,
- [materialId, current_stock, currentUserSession ? currentUserSession.name : 'Admin', now]
- );
- }
- await db.run('COMMIT');
- return { success: true };
- } catch (e) { await db.run('ROLLBACK'); throw e; }
- } catch (err) { return { success: false, error: err.message }; }
+  try {
+    if (!name || !name.trim() || !unit) return { success: false, error: 'Material name and unit are required.' };
+
+    // Uniqueness check
+    const duplicate = await db.queryOne(
+      'SELECT id FROM materials WHERE LOWER(name) = ? AND (is_deleted IS NULL OR is_deleted = 0)',
+      [name.toLowerCase().trim()]
+    );
+    if (duplicate) return { success: false, error: `A material named "${name}" already exists.` };
+
+    // Validate numbers
+    const validRate = validateFiniteNumber(rate || 0, 0, 'Rate');
+    const validStock = validateFiniteNumber(current_stock || 0, 0, 'Current stock');
+    const validMinStock = validateFiniteNumber(minimum_stock || 0, 0, 'Minimum stock');
+
+    const allowedCategories = ['Cement', 'Raw Materials'];
+    if (category && !allowedCategories.includes(category)) {
+      return { success: false, error: 'Invalid category. Allowed categories are Cement and Raw Materials.' };
+    }
+    const now = new Date().toISOString();
+    await db.run('BEGIN TRANSACTION');
+    try {
+      const result = await db.run(
+        `INSERT INTO materials (name, category, unit, current_stock, minimum_stock, rate, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [name.trim(), category || '', unit, validStock, validMinStock, validRate, now]
+      );
+      const materialId = result.lastInsertRowid;
+      if (validStock > 0) {
+        await db.run(
+          `INSERT INTO stock_movements (material_id, movement_type, quantity, remarks, created_by, created_at, stock_direction)
+          VALUES (?, 'Adjustment', ?, 'Initial stock entry', ?, ?, 'IN')`,
+          [materialId, validStock, currentUserSession ? currentUserSession.name : 'Admin', now]
+        );
+      }
+      await db.run('COMMIT');
+      return { success: true };
+    } catch (e) { await db.run('ROLLBACK'); throw e; }
+  } catch (err) { return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('db:updateMaterial', async (event, { id, name, category, unit, minimum_stock, rate }) => {
- try {
- if (!id || !name || !unit) return { success: false, error: 'ID, name and unit are required.' };
- const allowedCategories = ['Cement', 'Raw Materials'];
- if (category && !allowedCategories.includes(category)) {
- return { success: false, error: 'Invalid category. Allowed categories are Cement and Raw Materials.' };
- }
- await db.run(
- 'UPDATE materials SET name=?, category=?, unit=?, minimum_stock=?, rate=? WHERE id=?',
- [name, category || '', unit, minimum_stock || 0, rate || 0, id]
- );
- return { success: true };
- } catch (err) { return { success: false, error: err.message }; }
+  try {
+    if (!id || !name || !name.trim() || !unit) return { success: false, error: 'ID, name and unit are required.' };
+
+    // Uniqueness check
+    const duplicate = await db.queryOne(
+      'SELECT id FROM materials WHERE LOWER(name) = ? AND id != ? AND (is_deleted IS NULL OR is_deleted = 0)',
+      [name.toLowerCase().trim(), id]
+    );
+    if (duplicate) return { success: false, error: `A material named "${name}" already exists.` };
+
+    // Validate numbers
+    const validRate = validateFiniteNumber(rate || 0, 0, 'Rate');
+    const validMinStock = validateFiniteNumber(minimum_stock || 0, 0, 'Minimum stock');
+
+    const allowedCategories = ['Cement', 'Raw Materials'];
+    if (category && !allowedCategories.includes(category)) {
+      return { success: false, error: 'Invalid category. Allowed categories are Cement and Raw Materials.' };
+    }
+    await db.run(
+      'UPDATE materials SET name=?, category=?, unit=?, minimum_stock=?, rate=? WHERE id=?',
+      [name.trim(), category || '', unit, validMinStock, validRate, id]
+    );
+    return { success: true };
+  } catch (err) { return { success: false, error: err.message }; }
 });
 
 // =============================================================
@@ -178,26 +224,35 @@ ipcMain.handle('db:updateMaterial', async (event, { id, name, category, unit, mi
 // =============================================================
 
 ipcMain.handle('db:addStock', async (event, { material_id, quantity, supplier_name, invoice_number, vehicle_number, remarks, date }) => {
- try {
- if (!material_id || quantity <= 0) return { success: false, error: 'Select a valid material and enter quantity > 0.' };
- const material = await db.queryOne('SELECT name FROM materials WHERE id = ?', [material_id]);
- if (!material) return { success: false, error: 'Material not found.' };
+  try {
+    if (!material_id) return { success: false, error: 'Select a valid material.' };
 
-  const timestamp = getLocalISOString(date);
-  const addedBy = currentUserSession ? currentUserSession.name : 'Admin';
+    // Validate finite quantity > 0
+    let validQty;
+    try {
+      validQty = validateFiniteNumber(quantity, 0.00001, 'Quantity');
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
 
- await db.run('BEGIN TRANSACTION');
- try {
- await db.run('UPDATE materials SET current_stock = current_stock + ? WHERE id = ?', [quantity, material_id]);
- await db.run(
- `INSERT INTO stock_movements (material_id, movement_type, quantity, supplier_name, invoice_number, vehicle_number, remarks, created_by, created_at, stock_direction)
- VALUES (?, 'Stock In', ?, ?, ?, ?, ?, ?, ?, 'IN')`,
- [material_id, quantity, supplier_name || '', invoice_number || '', vehicle_number || '', remarks || '', addedBy, timestamp]
- );
- await db.run('COMMIT');
- return { success: true };
- } catch (e) { await db.run('ROLLBACK'); throw e; }
- } catch (err) { return { success: false, error: err.message }; }
+    const material = await db.queryOne('SELECT name FROM materials WHERE id = ?', [material_id]);
+    if (!material) return { success: false, error: 'Material not found.' };
+
+    const timestamp = getLocalISOString(date);
+    const addedBy = currentUserSession ? currentUserSession.name : 'Admin';
+
+    await db.run('BEGIN TRANSACTION');
+    try {
+      await db.run('UPDATE materials SET current_stock = current_stock + ? WHERE id = ?', [validQty, material_id]);
+      await db.run(
+        `INSERT INTO stock_movements (material_id, movement_type, quantity, supplier_name, invoice_number, vehicle_number, remarks, created_by, created_at, stock_direction)
+        VALUES (?, 'Stock In', ?, ?, ?, ?, ?, ?, ?, 'IN')`,
+        [material_id, validQty, supplier_name || '', invoice_number || '', vehicle_number || '', remarks || '', addedBy, timestamp]
+      );
+      await db.run('COMMIT');
+      return { success: true };
+    } catch (e) { await db.run('ROLLBACK'); throw e; }
+  } catch (err) { return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('db:stockOut', async (event, {
@@ -205,102 +260,112 @@ ipcMain.handle('db:stockOut', async (event, {
   customer_type, rate, total_amount, paid_amount, balance_amount, remarks, date
 }) => {
   try {
-  if (!material_id || quantity <= 0) return { success: false, error: 'Select a valid material and enter quantity > 0.' };
-  if (!customer_name) return { success: false, error: 'Customer name is required.' };
+    if (!material_id) return { success: false, error: 'Select a valid material.' };
+    if (!customer_name || !customer_name.trim()) return { success: false, error: 'Customer name is required.' };
 
-  // Server-side payment validation
-  const tAmt = parseFloat(total_amount) || 0;
-  const pAmt = parseFloat(paid_amount) || 0;
-  if (pAmt < 0) return { success: false, error: 'Paid amount cannot be negative.' };
-  if (tAmt > 0 && pAmt > tAmt) return { success: false, error: 'Paid amount cannot exceed total amount.' };
+    // Validate numbers
+    let validQty, validRate, validTotal, validPaid, validBalance;
+    try {
+      validQty = validateFiniteNumber(quantity, 0.00001, 'Quantity');
+      validRate = validateFiniteNumber(rate, 0, 'Rate');
+      validTotal = validateFiniteNumber(total_amount, 0, 'Total Amount');
+      validPaid = validateFiniteNumber(paid_amount, 0, 'Paid Amount');
+      validBalance = validateFiniteNumber(balance_amount, 0, 'Balance Amount');
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
 
- const material = await db.queryOne('SELECT * FROM materials WHERE id = ?', [material_id]);
- if (!material) return { success: false, error: 'Material not found.' };
- if (material.current_stock < quantity) {
- return { success: false, error: `Insufficient stock! ${material.name} only has ${material.current_stock} ${material.unit} available (requested: ${quantity}).` };
- }
+    if (validPaid > validTotal && validTotal > 0) {
+      return { success: false, error: 'Paid amount cannot exceed total amount.' };
+    }
 
-  const timestamp = getLocalISOString(date);
-  const doneBy = currentUserSession ? currentUserSession.name : 'Admin';
-  const now = getLocalISOString();
+    const material = await db.queryOne('SELECT * FROM materials WHERE id = ?', [material_id]);
+    if (!material) return { success: false, error: 'Material not found.' };
+    if (material.current_stock < validQty) {
+      return { success: false, error: `Insufficient stock! ${material.name} only has ${material.current_stock} ${material.unit} available (requested: ${validQty}).` };
+    }
 
- await db.run('BEGIN TRANSACTION');
- try {
- // Upsert customer
- let customerId = null;
- let existingCust = null;
- if (customer_phone && customer_phone.trim() !== '') {
- existingCust = await db.queryOne(
- 'SELECT id, customer_type FROM customers WHERE phone = ? AND (is_deleted IS NULL OR is_deleted = 0)',
- [customer_phone.trim()]
- );
- } else if (customer_name) {
- const addr = customer_address ? customer_address.trim() : '';
- existingCust = await db.queryOne(
- 'SELECT id, customer_type FROM customers WHERE name = ? AND COALESCE(address, "") = ? AND (phone IS NULL OR phone = "") AND (is_deleted IS NULL OR is_deleted = 0)',
- [customer_name.trim(), addr]
- );
- }
+    const timestamp = getLocalISOString(date);
+    const doneBy = currentUserSession ? currentUserSession.name : 'Admin';
+    const now = getLocalISOString();
 
-  if (existingCust) {
-  customerId = existingCust.id;
-  await db.run(
-  'UPDATE customers SET total_purchases = total_purchases + ?, balance_amount = balance_amount + ?, customer_type = ? WHERE id = ?',
-  [total_amount || 0, balance_amount || 0, customer_type || 'Retailer', customerId]
-  );
-  } else {
-  const custResult = await db.run(
-  `INSERT INTO customers (name, phone, address, total_purchases, balance_amount, customer_type, created_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  [customer_name, customer_phone || '', customer_address || '', total_amount || 0, balance_amount || 0, customer_type || 'Retailer', now]
-  );
-  customerId = custResult.lastInsertRowid;
-  }
+    await db.run('BEGIN TRANSACTION');
+    try {
+      // Upsert customer
+      let customerId = null;
+      let existingCust = null;
+      if (customer_phone && customer_phone.trim() !== '') {
+        existingCust = await db.queryOne(
+          'SELECT id, customer_type FROM customers WHERE phone = ? AND (is_deleted IS NULL OR is_deleted = 0)',
+          [customer_phone.trim()]
+        );
+      } else if (customer_name) {
+        const addr = customer_address ? customer_address.trim() : '';
+        existingCust = await db.queryOne(
+          'SELECT id, customer_type FROM customers WHERE name = ? AND COALESCE(address, "") = ? AND (phone IS NULL OR phone = "") AND (is_deleted IS NULL OR is_deleted = 0)',
+          [customer_name.trim(), addr]
+        );
+      }
 
-  // Reduce stock
-  await db.run('UPDATE materials SET current_stock = current_stock - ? WHERE id = ?', [quantity, material_id]);
+      if (existingCust) {
+        customerId = existingCust.id;
+        await db.run(
+          'UPDATE customers SET total_purchases = total_purchases + ?, balance_amount = balance_amount + ?, customer_type = ? WHERE id = ?',
+          [validTotal, validBalance, customer_type || 'Retailer', customerId]
+        );
+      } else {
+        const custResult = await db.run(
+          `INSERT INTO customers (name, phone, address, total_purchases, balance_amount, customer_type, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [customer_name.trim(), customer_phone || '', customer_address || '', validTotal, validBalance, customer_type || 'Retailer', now]
+        );
+        customerId = custResult.lastInsertRowid;
+      }
 
-  // Generate receipt number
-  const receiptNumber = await generateReceiptNumber();
+      // Reduce stock
+      await db.run('UPDATE materials SET current_stock = current_stock - ? WHERE id = ?', [validQty, material_id]);
 
-  // Create receipt
-  const receiptResult = await db.run(
-  `INSERT INTO receipts (receipt_number, customer_id, customer_name, customer_phone, customer_address, receipt_date, total_amount, paid_amount, balance_amount, remarks, movement_type, customer_type, created_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-   [receiptNumber, customerId, customer_name, customer_phone || '', customer_address || '',
-   timestamp, total_amount || 0, paid_amount || 0, balance_amount || 0, remarks || '', customer_type || 'Stock Out', customer_type || 'Retailer', now]
-  );
-  const receiptId = receiptResult.lastInsertRowid;
+      // Generate receipt number
+      const receiptNumber = await generateReceiptNumber();
 
-  // Create initial payment in payments history
-  if ((paid_amount || 0) > 0) {
-  await db.run(
-  `INSERT INTO payments (receipt_id, payment_date, amount, remarks, created_at)
-  VALUES (?, ?, ?, 'Initial payment', ?)`,
-  [receiptId, timestamp, paid_amount, now]
-  );
-  }
+      // Create receipt
+      const receiptResult = await db.run(
+        `INSERT INTO receipts (receipt_number, customer_id, customer_name, customer_phone, customer_address, receipt_date, total_amount, paid_amount, balance_amount, remarks, movement_type, customer_type, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [receiptNumber, customerId, customer_name.trim(), customer_phone || '', customer_address || '',
+        timestamp, validTotal, validPaid, validBalance, remarks || '', customer_type || 'Stock Out', customer_type || 'Retailer', now]
+      );
+      const receiptId = receiptResult.lastInsertRowid;
 
-  // Create receipt item
-  await db.run(
-  `INSERT INTO receipt_items (receipt_id, material_id, material_name, quantity, unit, rate, total)
-  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  [receiptId, material_id, material.name, quantity, material.unit, rate || 0, total_amount || 0]
-  );
+      // Create initial payment in payments history
+      if (validPaid > 0) {
+        await db.run(
+          `INSERT INTO payments (receipt_id, payment_date, amount, remarks, created_at)
+          VALUES (?, ?, ?, 'Initial payment', ?)`,
+          [receiptId, timestamp, validPaid, now]
+        );
+      }
 
-  // Log stock movement
-  await db.run(
-  `INSERT INTO stock_movements (material_id, movement_type, quantity, customer_id, customer_name, receipt_id, rate, total_amount, paid_amount, balance_amount, remarks, created_by, created_at, stock_direction, customer_type)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OUT', ?)`,
-   [material_id, customer_type || 'Stock Out', quantity, customerId, customer_name,
-  receiptId, rate || 0, total_amount || 0, paid_amount || 0, balance_amount || 0,
-  remarks || '', doneBy, timestamp, customer_type || 'Retailer']
-  );
+      // Create receipt item
+      await db.run(
+        `INSERT INTO receipt_items (receipt_id, material_id, material_name, quantity, unit, rate, total)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [receiptId, material_id, material.name, validQty, material.unit, validRate, validTotal]
+      );
 
- await db.run('COMMIT');
- return { success: true, receiptId, receiptNumber };
- } catch (e) { await db.run('ROLLBACK'); throw e; }
- } catch (err) { return { success: false, error: err.message }; }
+      // Log stock movement
+      await db.run(
+        `INSERT INTO stock_movements (material_id, movement_type, quantity, customer_id, customer_name, receipt_id, rate, total_amount, paid_amount, balance_amount, remarks, created_by, created_at, stock_direction, customer_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OUT', ?)`,
+        [material_id, customer_type || 'Stock Out', validQty, customerId, customer_name.trim(),
+        receiptId, validRate, validTotal, validPaid, validBalance,
+        remarks || '', doneBy, timestamp, customer_type || 'Retailer']
+      );
+
+      await db.run('COMMIT');
+      return { success: true, receiptId, receiptNumber };
+    } catch (e) { await db.run('ROLLBACK'); throw e; }
+  } catch (err) { return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('db:getStockMovements', async (event, filters) => {
@@ -487,64 +552,67 @@ ipcMain.handle('db:getReceiptByNumber', async (event, receiptNumber) => {
 });
 
 ipcMain.handle('db:deleteReceipt', async (event, id) => {
- try {
- const receipt = await db.queryOne('SELECT * FROM receipts WHERE id = ?', [id]);
- if (!receipt) return { success: false, error: 'Receipt not found.' };
+  try {
+    const receipt = await db.queryOne('SELECT * FROM receipts WHERE id = ?', [id]);
+    if (!receipt) return { success: false, error: 'Receipt not found.' };
 
- await db.run('BEGIN TRANSACTION');
- try {
- const now = getLocalISOString();
- // 1. Soft delete receipt
- await db.run('UPDATE receipts SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
+    await db.run('BEGIN TRANSACTION');
+    try {
+      const now = getLocalISOString();
+      // 1. Soft delete receipt
+      await db.run('UPDATE receipts SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
 
- // 2. Find and reverse/soft delete associated stock movements
- const movements = await db.query('SELECT * FROM stock_movements WHERE receipt_id = ? AND (is_deleted IS NULL OR is_deleted = 0)', [id]);
- for (const sm of movements) {
- await db.run('UPDATE stock_movements SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, sm.id]);
+      // 1.5. Clean up associated payments (prevent orphaned records)
+      await db.run('DELETE FROM payments WHERE receipt_id = ?', [id]);
 
- // Reverse stock level based on stock_direction or fallback
- let dir = sm.stock_direction;
- if (!dir) {
- if (sm.movement_type === 'Stock In') {
- dir = 'IN';
- } else if (['Customer Sale', 'Direct Sale', 'Stock Out', 'Site Usage', 'Damaged Stock'].includes(sm.movement_type)) {
- dir = 'OUT';
- } else if (sm.movement_type === 'Adjustment') {
- dir = 'IN';
- }
- }
+      // 2. Find and reverse/soft delete associated stock movements
+      const movements = await db.query('SELECT * FROM stock_movements WHERE receipt_id = ? AND (is_deleted IS NULL OR is_deleted = 0)', [id]);
+      for (const sm of movements) {
+        await db.run('UPDATE stock_movements SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, sm.id]);
 
- if (dir === 'IN') {
- const mat = await db.queryOne('SELECT current_stock, name FROM materials WHERE id = ?', [sm.material_id]);
- if (mat && (mat.current_stock - sm.quantity < 0)) {
- throw new Error(`Cannot delete receipt. Reversing stock movement for '${mat.name}' would make stock negative.`);
- }
- await db.run('UPDATE materials SET current_stock = current_stock - ? WHERE id = ?', [sm.quantity, sm.material_id]);
- } else if (dir === 'OUT') {
- await db.run('UPDATE materials SET current_stock = current_stock + ? WHERE id = ?', [sm.quantity, sm.material_id]);
- }
- }
+        // Reverse stock level based on stock_direction or fallback
+        let dir = sm.stock_direction;
+        if (!dir) {
+          if (sm.movement_type === 'Stock In') {
+            dir = 'IN';
+          } else if (['Customer Sale', 'Direct Sale', 'Stock Out', 'Site Usage', 'Damaged Stock'].includes(sm.movement_type)) {
+            dir = 'OUT';
+          } else if (sm.movement_type === 'Adjustment') {
+            dir = 'IN';
+          }
+        }
 
- // 3. Update customer total purchases and balance safely
- if (receipt.customer_id) {
- const cust = await db.queryOne('SELECT total_purchases, balance_amount FROM customers WHERE id = ?', [receipt.customer_id]);
- if (cust) {
- const newPurchases = Math.max(0, (cust.total_purchases || 0) - (receipt.total_amount || 0));
- const newBalance = Math.max(0, (cust.balance_amount || 0) - (receipt.balance_amount || 0));
- await db.run(
- 'UPDATE customers SET total_purchases = ?, balance_amount = ? WHERE id = ?',
- [newPurchases, newBalance, receipt.customer_id]
- );
- }
- }
+        if (dir === 'IN') {
+          const mat = await db.queryOne('SELECT current_stock, name FROM materials WHERE id = ?', [sm.material_id]);
+          if (mat && (mat.current_stock - sm.quantity < 0)) {
+            throw new Error(`Cannot delete receipt. Reversing stock movement for '${mat.name}' would make stock negative.`);
+          }
+          await db.run('UPDATE materials SET current_stock = current_stock - ? WHERE id = ?', [sm.quantity, sm.material_id]);
+        } else if (dir === 'OUT') {
+          await db.run('UPDATE materials SET current_stock = current_stock + ? WHERE id = ?', [sm.quantity, sm.material_id]);
+        }
+      }
 
- await db.run('COMMIT');
- return { success: true };
- } catch (e) {
- await db.run('ROLLBACK');
- throw e;
- }
- } catch (err) { return { success: false, error: err.message }; }
+      // 3. Update customer total purchases and balance safely
+      if (receipt.customer_id) {
+        const cust = await db.queryOne('SELECT total_purchases, balance_amount FROM customers WHERE id = ?', [receipt.customer_id]);
+        if (cust) {
+          const newPurchases = Math.max(0, (cust.total_purchases || 0) - (receipt.total_amount || 0));
+          const newBalance = Math.max(0, (cust.balance_amount || 0) - (receipt.balance_amount || 0));
+          await db.run(
+            'UPDATE customers SET total_purchases = ?, balance_amount = ? WHERE id = ?',
+            [newPurchases, newBalance, receipt.customer_id]
+          );
+        }
+      }
+
+      await db.run('COMMIT');
+      return { success: true };
+    } catch (e) {
+      await db.run('ROLLBACK');
+      throw e;
+    }
+  } catch (err) { return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('db:updateReceiptPdfPath', async (event, { id, pdf_path }) => {
@@ -562,62 +630,68 @@ ipcMain.handle('db:markWhatsappSent', async (event, id) => {
 });
 
 ipcMain.handle('db:addPayment', async (event, { receipt_id, amount, remarks, date }) => {
- try {
- if (!receipt_id || amount <= 0) {
- return { success: false, error: 'Invalid receipt ID or payment amount.' };
- }
+  try {
+    if (!receipt_id) return { success: false, error: 'Invalid receipt ID.' };
 
- const receipt = await db.queryOne('SELECT * FROM receipts WHERE id = ? AND (is_deleted IS NULL OR is_deleted = 0)', [receipt_id]);
- if (!receipt) return { success: false, error: 'Receipt not found.' };
+    // Validate amount is a finite number > 0
+    let validAmount;
+    try {
+      validAmount = validateFiniteNumber(amount, 0.01, 'Payment amount');
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
 
- const remaining = receipt.total_amount - receipt.paid_amount;
- if (amount > remaining) {
- return { success: false, error: `Payment amount (₹${amount.toFixed(2)}) exceeds remaining balance (₹${remaining.toFixed(2)}).` };
- }
+    const receipt = await db.queryOne('SELECT * FROM receipts WHERE id = ? AND (is_deleted IS NULL OR is_deleted = 0)', [receipt_id]);
+    if (!receipt) return { success: false, error: 'Receipt not found.' };
 
- const timestamp = getLocalISOString(date);
- const now = getLocalISOString();
+    const remaining = Math.round(((receipt.total_amount - receipt.paid_amount) + Number.EPSILON) * 100) / 100;
+    if (validAmount > remaining) {
+      return { success: false, error: `Payment amount (₹${validAmount.toFixed(2)}) exceeds remaining balance (₹${remaining.toFixed(2)}).` };
+    }
 
- await db.run('BEGIN TRANSACTION');
- try {
- // Insert payment record
- await db.run(
- `INSERT INTO payments (receipt_id, payment_date, amount, remarks, created_at)
- VALUES (?, ?, ?, ?, ?)`,
- [receipt_id, timestamp, amount, remarks || '', now]
- );
+    const timestamp = getLocalISOString(date);
+    const now = getLocalISOString();
 
- // Update receipt paid and balance amounts
- const newPaid = receipt.paid_amount + amount;
- const newBalance = receipt.total_amount - newPaid;
- await db.run(
- 'UPDATE receipts SET paid_amount = ?, balance_amount = ?, updated_at = ? WHERE id = ?',
- [newPaid, newBalance, now, receipt_id]
- );
+    await db.run('BEGIN TRANSACTION');
+    try {
+      // Insert payment record
+      await db.run(
+        `INSERT INTO payments (receipt_id, payment_date, amount, remarks, created_at)
+        VALUES (?, ?, ?, ?, ?)`,
+        [receipt_id, timestamp, validAmount, remarks || '', now]
+      );
 
- // Update customer balance
- if (receipt.customer_id) {
- const custReceipts = await db.query(
- 'SELECT SUM(balance_amount) as total_balance FROM receipts WHERE customer_id = ? AND (is_deleted IS NULL OR is_deleted = 0)',
- [receipt.customer_id]
- );
- const newCustBalance = custReceipts[0]?.total_balance || 0;
- await db.run('UPDATE customers SET balance_amount = ? WHERE id = ?', [newCustBalance, receipt.customer_id]);
- }
+      // Update receipt paid and balance amounts
+      const newPaid = Math.round(((receipt.paid_amount + validAmount) + Number.EPSILON) * 100) / 100;
+      const newBalance = Math.round(((receipt.total_amount - newPaid) + Number.EPSILON) * 100) / 100;
+      await db.run(
+        'UPDATE receipts SET paid_amount = ?, balance_amount = ?, updated_at = ? WHERE id = ?',
+        [newPaid, newBalance, now, receipt_id]
+      );
 
- await db.run('COMMIT');
+      // Update customer balance
+      if (receipt.customer_id) {
+        const custReceipts = await db.query(
+          'SELECT SUM(balance_amount) as total_balance FROM receipts WHERE customer_id = ? AND (is_deleted IS NULL OR is_deleted = 0)',
+          [receipt.customer_id]
+        );
+        const newCustBalance = custReceipts[0]?.total_balance || 0;
+        await db.run('UPDATE customers SET balance_amount = ? WHERE id = ?', [newCustBalance, receipt.customer_id]);
+      }
 
- // Regenerate PDF
- await generateReceiptPDF(receipt_id);
+      await db.run('COMMIT');
 
- return { success: true };
- } catch (e) {
- await db.run('ROLLBACK');
- throw e;
- }
- } catch (err) {
- return { success: false, error: err.message };
- }
+      // Regenerate PDF
+      await generateReceiptPDF(receipt_id);
+
+      return { success: true };
+    } catch (e) {
+      await db.run('ROLLBACK');
+      throw e;
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
 // =============================================================
@@ -796,21 +870,24 @@ ipcMain.handle('db:getCompanySettings', async () => {
 });
 
 ipcMain.handle('db:saveCompanySettings', async (event, { company_name, address, phone, email, gstin, logo_path }) => {
- try {
- const existing = await db.queryOne('SELECT id FROM company_settings LIMIT 1');
- if (existing) {
- await db.run(
- 'UPDATE company_settings SET company_name=?, address=?, phone=?, email=?, gstin=?, logo_path=? WHERE id=?',
- [company_name, address, phone, email, gstin, logo_path, existing.id]
- );
- } else {
- await db.run(
- 'INSERT INTO company_settings (company_name, address, phone, email, gstin, logo_path) VALUES (?,?,?,?,?,?)',
- [company_name, address, phone, email, gstin, logo_path]
- );
- }
- return { success: true };
- } catch (err) { return { success: false, error: err.message }; }
+  try {
+    if (!company_name || company_name.trim() === '') {
+      return { success: false, error: 'Company Name is required.' };
+    }
+    const existing = await db.queryOne('SELECT id FROM company_settings LIMIT 1');
+    if (existing) {
+      await db.run(
+        'UPDATE company_settings SET company_name=?, address=?, phone=?, email=?, gstin=?, logo_path=? WHERE id=?',
+        [company_name.trim(), address, phone, email, gstin, logo_path, existing.id]
+      );
+    } else {
+      await db.run(
+        'INSERT INTO company_settings (company_name, address, phone, email, gstin, logo_path) VALUES (?,?,?,?,?,?)',
+        [company_name.trim(), address, phone, email, gstin, logo_path]
+      );
+    }
+    return { success: true };
+  } catch (err) { return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('db:addExpense', async (event, data) => {
@@ -1735,28 +1812,29 @@ ipcMain.handle('db:clearDemoData', async () => {
 });
 
 ipcMain.handle('db:clearBusinessData', async () => {
- try {
- await db.run('PRAGMA foreign_keys = OFF');
- await db.run('BEGIN TRANSACTION');
- try {
- await db.run('DELETE FROM receipt_items');
- await db.run('DELETE FROM payments');
- await db.run('DELETE FROM stock_movements');
- await db.run('DELETE FROM receipts');
- await db.run('DELETE FROM customers');
- await db.run('UPDATE materials SET current_stock = 0');
- await db.run('COMMIT');
- await db.run('PRAGMA foreign_keys = ON');
- return { success: true };
- } catch (e) {
- await db.run('ROLLBACK');
- await db.run('PRAGMA foreign_keys = ON');
- throw e;
- }
- } catch (err) {
- await db.run('PRAGMA foreign_keys = ON');
- return { success: false, error: err.message };
- }
+  try {
+    await db.run('PRAGMA foreign_keys = OFF');
+    await db.run('BEGIN TRANSACTION');
+    try {
+      await db.run('DELETE FROM receipt_items');
+      await db.run('DELETE FROM payments');
+      await db.run('DELETE FROM stock_movements');
+      await db.run('DELETE FROM receipts');
+      await db.run('DELETE FROM customers');
+      await db.run('DELETE FROM expenses');
+      await db.run('UPDATE materials SET current_stock = 0');
+      await db.run('COMMIT');
+      await db.run('PRAGMA foreign_keys = ON');
+      return { success: true };
+    } catch (e) {
+      await db.run('ROLLBACK');
+      await db.run('PRAGMA foreign_keys = ON');
+      throw e;
+    }
+  } catch (err) {
+    await db.run('PRAGMA foreign_keys = ON');
+    return { success: false, error: err.message };
+  }
 });
 
 // =============================================================

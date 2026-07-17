@@ -254,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
  const address = document.getElementById('edit-cust-address').value.trim();
 
  if (!name) return showAlert('edit-cust-alert', 'Name is required.');
+ if (phone && !/^[+\d\s\-()]{7,15}$/.test(phone)) return showAlert('edit-cust-alert', 'Enter a valid phone number.');
 
  const result = await window.api.updateCustomer({ id, name, phone, address, customer_type });
  if (result.success) {

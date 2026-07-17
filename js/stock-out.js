@@ -182,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!material_id) return showAlert('Please select a material.');
     if (!quantity || quantity <= 0) return showAlert('Please enter a valid quantity.');
     if (!customer_name) return showAlert('Customer name is required.');
-    if (!customer_phone) return showAlert('Customer phone number is required.');
     if (!customer_type) return showAlert('Please select customer type.');
 
     // Strict paid amount validation
