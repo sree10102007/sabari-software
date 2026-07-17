@@ -7,9 +7,28 @@ const bcrypt = require('bcryptjs');
 // Global error handlers
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception in main process:', error);
+  try {
+    dialog.showErrorBox(
+      'Unexpected System Error',
+      `An unexpected error occurred in the application:\n\n${error.stack || error.message || error}\n\nThe application will now relaunch to ensure stability.`
+    );
+    app.relaunch();
+    app.exit(1);
+  } catch (e) {
+    console.error('Failed to show error box or relaunch:', e);
+    process.exit(1);
+  }
 });
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  try {
+    dialog.showErrorBox(
+      'System Warning',
+      `A background operation failed:\n\n${reason?.stack || reason?.message || reason}`
+    );
+  } catch (e) {
+    console.error('Failed to show unhandled rejection error box:', e);
+  }
 });
 
 // Helper: validate and sanitize finite number
@@ -35,25 +54,27 @@ if (!fs.existsSync(receiptsDir)) {
 }
 
 function createWindow() {
- Menu.setApplicationMenu(null);
- mainWindow = new BrowserWindow({
- width: 1366,
- height: 900,
- minWidth: 1100,
- minHeight: 768,
- icon: path.join(__dirname, 'assets', 'logo.png'),
- webPreferences: {
- preload: path.join(__dirname, 'preload.js'),
- contextIsolation: true,
- nodeIntegration: false
- }
- });
+  Menu.setApplicationMenu(null);
+  const isDev = !app.isPackaged || process.argv.includes('--debug');
+  mainWindow = new BrowserWindow({
+    width: 1366,
+    height: 900,
+    minWidth: 1100,
+    minHeight: 768,
+    icon: path.join(__dirname, 'assets', 'logo.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      devTools: isDev
+    }
+  });
 
- mainWindow.loadFile(path.join(__dirname, 'pages', 'login.html'));
+  mainWindow.loadFile(path.join(__dirname, 'pages', 'login.html'));
 
- mainWindow.on('closed', function () {
- mainWindow = null;
- });
+  mainWindow.on('closed', function () {
+    mainWindow = null;
+  });
 }
 
 app.on('ready', createWindow);

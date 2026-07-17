@@ -151,4 +151,57 @@ document.addEventListener('DOMContentLoaded', async () => {
  loadDashboardStats();
  loadRecentMovements();
  loadRecentReceipts();
+
+ // Backup reminder check and click handlers
+ const checkBackupReminder = () => {
+   if (sessionStorage.getItem('backup_reminder_dismissed') === 'true') {
+     return;
+   }
+
+   const lastBackupTime = localStorage.getItem('last_backup_time');
+   let needsBackup = false;
+
+   if (!lastBackupTime) {
+     needsBackup = true;
+   } else {
+     const lastDate = new Date(lastBackupTime);
+     const diffTime = Math.abs(new Date() - lastDate);
+     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+     if (diffDays > 7) {
+       needsBackup = true;
+     }
+   }
+
+   if (needsBackup) {
+     const reminderDiv = document.getElementById('backup-reminder');
+     if (reminderDiv) {
+       reminderDiv.style.display = 'flex';
+
+       document.getElementById('btn-backup-now').onclick = async () => {
+         try {
+           showToast('Opening dialog to save backup...', 'pending');
+           const result = await window.api.backupDatabase();
+           if (result.success) {
+             localStorage.setItem('last_backup_path', result.filePath);
+             localStorage.setItem('last_backup_size', result.size);
+             localStorage.setItem('last_backup_time', result.date);
+             showToast('Database backup created successfully!', 'success');
+             reminderDiv.style.display = 'none';
+           } else {
+             showToast('Backup cancelled: ' + result.error, 'error');
+           }
+         } catch (err) {
+           showToast('Error running backup: ' + err.message, 'error');
+         }
+       };
+
+       document.getElementById('btn-backup-dismiss').onclick = () => {
+         sessionStorage.setItem('backup_reminder_dismissed', 'true');
+         reminderDiv.style.display = 'none';
+       };
+     }
+   }
+ };
+
+ checkBackupReminder();
 });

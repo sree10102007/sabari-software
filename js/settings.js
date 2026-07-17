@@ -50,7 +50,6 @@ document.addEventListener('DOMContentLoaded', async () => {
  // Buttons
  const btnBackup = document.getElementById('btn-backup');
  const btnRestore = document.getElementById('btn-restore');
- const btnResetDemo = document.getElementById('btn-reset-demo');
  const btnClearDemo = document.getElementById('btn-clear-demo');
  const btnClearBusiness = document.getElementById('btn-clear-business');
 
@@ -194,27 +193,6 @@ document.addEventListener('DOMContentLoaded', async () => {
  }
  } catch (err) {
  showToast('Error running restore: ' + err.message, 'error');
- }
- });
-
- // Reset Demo Data
- btnResetDemo.addEventListener('click', async () => {
- const confirmed1 = confirm('Are you sure you want to reset the database and restore default demo materials? This will delete all current receipts, customers, and stock history!');
- if (!confirmed1) return;
- const confirmed2 = confirm('This operation is permanent and will completely reset all records. Proceed?');
- if (!confirmed2) return;
-
- try {
- showToast('Resetting database...', 'pending');
- const result = await window.api.resetDemoData();
- if (result.success) {
- showToast('Database reset to demo settings successfully!');
- await initSettingsPage();
- } else {
- showToast('Failed to reset data: ' + result.error, 'error');
- }
- } catch (err) {
- showToast('System error: ' + err.message, 'error');
  }
  });
 
