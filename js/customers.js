@@ -33,118 +33,125 @@ document.addEventListener('DOMContentLoaded', () => {
  renderTable(filtered);
  }
 
- function renderTable(customers) {
- const tbody = document.getElementById('customers-table-body');
- tbody.innerHTML = '';
- if (!customers.length) {
- tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No customers yet. Add your first customer!</td></tr>';
- return;
- }
-  customers.forEach(c => {
-    const purchaseTotal = c.total_purchases || 0;
-    const purchaseBalance = c.balance_amount || 0;
-    const hasBalance = parseFloat(purchaseBalance || 0) > 0;
-    const lastSaleDate = c.last_sale_date ? new Date(c.last_sale_date).toLocaleDateString('en-IN') : '-';
+  function renderTable(customers) {
+    const tbody = document.getElementById('customers-table-body');
+    tbody.innerHTML = '';
+    if (!customers.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">No customers yet. Add your first customer!</td></tr>';
+      return;
+    }
+    customers.forEach((c, index) => {
+      const purchaseTotal = c.total_purchases || 0;
+      const purchaseBalance = c.balance_amount || 0;
+      const hasBalance = parseFloat(purchaseBalance || 0) > 0;
+      const lastSaleDate = c.last_sale_date ? new Date(c.last_sale_date).toLocaleDateString('en-IN') : '-';
+      
+      const tr = document.createElement('tr');
+      // Normalize legacy 'Direct Customer' to 'Retailer' for display
+      const displayType = (c.customer_type === 'Direct Customer') ? 'Retailer' : (c.customer_type || 'Retailer');
+      const isEngineer = displayType === 'Engineer';
+      tr.innerHTML = `
+        <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${index + 1}</td>
+        <td><strong>${escapeHtml(c.name)}</strong></td>
+        <td><span class="status-badge ${isEngineer ? 'approved' : 'pending'}">${escapeHtml(displayType)}</span></td>
+        <td>${escapeHtml(c.phone || '-')}</td>
+        <td style="font-size:12px;">${escapeHtml(c.address || '-')}</td>
+        <td>${lastSaleDate}</td>
+        <td><strong>&#8377;${parseFloat(purchaseTotal).toFixed(2)}</strong></td>
+        <td style="color:${hasBalance ? 'var(--danger-color)' : 'var(--success-color)'};font-weight:700;">&#8377;${parseFloat(purchaseBalance).toFixed(2)}</td>
+        <td class="actions-col">
+        <div class="table-actions">
+        <button class="btn btn-action btn-pay btn-pay-cust" data-id="${c.id}" data-name="${escapeHtml(c.name)}" data-balance="${parseFloat(purchaseBalance).toFixed(2)}">Pay</button>
+        <button class="btn btn-action btn-history btn-view-history" data-id="${c.id}" data-name="${escapeHtml(c.name)}">History</button>
+        <button class="btn btn-action btn-edit btn-edit-cust" data-id="${c.id}">Edit</button>
+        <a href="stock-out.html" class="btn btn-action btn-sale" style="text-decoration:none;">Sale</a>
+        <button class="btn btn-action btn-delete btn-delete-cust" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Delete</button>
+        </div>
+        </td>
+    `;
+   
+    const payBtn = tr.querySelector('.btn-pay-cust');
+    payBtn.addEventListener('click', () => {
+      openPaymentModal(parseInt(payBtn.dataset.id), payBtn.dataset.name, parseFloat(payBtn.dataset.balance));
+    });
+
+    const viewHistoryBtn = tr.querySelector('.btn-view-history');
+    viewHistoryBtn.addEventListener('click', () => {
+      viewHistory(parseInt(viewHistoryBtn.dataset.id), viewHistoryBtn.dataset.name);
+    });
     
-    const tr = document.createElement('tr');
-    // Normalize legacy 'Direct Customer' to 'Retailer' for display
-    const displayType = (c.customer_type === 'Direct Customer') ? 'Retailer' : (c.customer_type || 'Retailer');
-    const isEngineer = displayType === 'Engineer';
-    tr.innerHTML = `
-      <td><strong>${escapeHtml(c.name)}</strong></td>
-      <td><span class="status-badge ${isEngineer ? 'approved' : 'pending'}">${escapeHtml(displayType)}</span></td>
-      <td>${escapeHtml(c.phone || '-')}</td>
-      <td style="font-size:12px;">${escapeHtml(c.address || '-')}</td>
-      <td>${lastSaleDate}</td>
-      <td><strong>&#8377;${parseFloat(purchaseTotal).toFixed(2)}</strong></td>
-      <td style="color:${hasBalance ? 'var(--danger-color)' : 'var(--success-color)'};font-weight:700;">&#8377;${parseFloat(purchaseBalance).toFixed(2)}</td>
-      <td class="actions-col">
-      <div class="table-actions">
-      <button class="btn btn-action btn-history btn-view-history" data-id="${c.id}" data-name="${escapeHtml(c.name)}">History</button>
-      <button class="btn btn-action btn-edit btn-edit-cust" data-id="${c.id}">Edit</button>
-      <a href="stock-out.html" class="btn btn-action btn-sale" style="text-decoration:none;">Sale</a>
-      <button class="btn btn-action btn-delete btn-delete-cust" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Delete</button>
-      </div>
-      </td>
-  `;
- 
- const viewHistoryBtn = tr.querySelector('.btn-view-history');
- viewHistoryBtn.addEventListener('click', () => {
- viewHistory(parseInt(viewHistoryBtn.dataset.id), viewHistoryBtn.dataset.name);
- });
- 
- const editBtn = tr.querySelector('.btn-edit-cust');
- editBtn.addEventListener('click', () => {
- openEditCust(parseInt(editBtn.dataset.id));
- });
- 
- const deleteBtn = tr.querySelector('.btn-delete-cust');
- deleteBtn.addEventListener('click', () => {
- deleteCustomer(parseInt(deleteBtn.dataset.id), deleteBtn.dataset.name);
- });
- 
- tbody.appendChild(tr);
- });
- }
+    const editBtn = tr.querySelector('.btn-edit-cust');
+    editBtn.addEventListener('click', () => {
+      openEditCust(parseInt(editBtn.dataset.id));
+    });
+    
+    const deleteBtn = tr.querySelector('.btn-delete-cust');
+    deleteBtn.addEventListener('click', () => {
+      deleteCustomer(parseInt(deleteBtn.dataset.id), deleteBtn.dataset.name);
+    });
+    
+    tbody.appendChild(tr);
+    });
+  }
 
- // Tab filter listeners
- const tabs = document.querySelectorAll('#cust-filter-tabs .filter-tab');
- tabs.forEach(tab => {
- tab.addEventListener('click', (e) => {
- tabs.forEach(t => {
- t.classList.remove('btn-primary');
- t.classList.add('btn-secondary');
- });
- e.target.classList.remove('btn-secondary');
- e.target.classList.add('btn-primary');
- activeTypeFilter = e.target.dataset.type;
- applyFilters();
- });
- });
+  // Tab filter listeners
+  const tabs = document.querySelectorAll('#cust-filter-tabs .filter-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      tabs.forEach(t => {
+        t.classList.remove('btn-primary');
+        t.classList.add('btn-secondary');
+      });
+      e.target.classList.remove('btn-secondary');
+      e.target.classList.add('btn-primary');
+      activeTypeFilter = e.target.dataset.type;
+      applyFilters();
+    });
+  });
 
- // Search
- document.getElementById('cust-search').addEventListener('input', (e) => {
- applyFilters();
- });
+  // Search
+  document.getElementById('cust-search').addEventListener('input', (e) => {
+    applyFilters();
+  });
 
- // Add customer
- document.getElementById('add-customer-form').addEventListener('submit', async (e) => {
- e.preventDefault();
- document.getElementById('add-cust-alert').style.display = 'none';
- const name = document.getElementById('cust-name').value.trim();
- const customer_type = document.getElementById('cust-type').value;
- const phone = document.getElementById('cust-phone').value.trim();
- const address = document.getElementById('cust-address').value.trim();
+  // Add customer
+  document.getElementById('add-customer-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    document.getElementById('add-cust-alert').style.display = 'none';
+    const name = document.getElementById('cust-name').value.trim();
+    const customer_type = document.getElementById('cust-type').value;
+    const phone = document.getElementById('cust-phone').value.trim();
+    const address = document.getElementById('cust-address').value.trim();
 
- if (!name) return showAlert('add-cust-alert', 'Customer name is required.');
- if (!customer_type) return showAlert('add-cust-alert', 'Please select a customer type.');
- if (phone && !/^[+\d\s\-()]{7,15}$/.test(phone)) return showAlert('add-cust-alert', 'Enter a valid phone number.');
+    if (!name) return showAlert('add-cust-alert', 'Customer name is required.');
+    if (!customer_type) return showAlert('add-cust-alert', 'Please select a customer type.');
+    if (phone && !/^[+\d\s\-()]{7,15}$/.test(phone)) return showAlert('add-cust-alert', 'Enter a valid phone number.');
 
- const result = await window.api.addCustomer({ name, phone, address, customer_type });
- if (result.success) {
- showToast(` Customer "${name}" added!`);
- e.target.reset();
- document.getElementById('add-cust-alert').style.display = 'none';
- loadCustomers();
- } else {
- showAlert('add-cust-alert', result.error || 'Failed to add customer.');
- }
- });
+    const result = await window.api.addCustomer({ name, phone, address, customer_type });
+    if (result.success) {
+      showToast(` Customer "${name}" added!`);
+      e.target.reset();
+      document.getElementById('add-cust-alert').style.display = 'none';
+      loadCustomers();
+    } else {
+      showAlert('add-cust-alert', result.error || 'Failed to add customer.');
+    }
+  });
 
   // View history
   async function viewHistory(id, name) {
     document.getElementById('history-modal-title').textContent = ` Purchase History — ${name}`;
-    document.getElementById('history-table-body').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>';
+    document.getElementById('history-table-body').innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>';
     document.getElementById('history-modal').style.display = 'flex';
 
     const history = await window.api.getCustomerHistory(id);
     const tbody = document.getElementById('history-table-body');
     tbody.innerHTML = '';
     if (!history.length) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">No purchases recorded yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);">No purchases recorded yet.</td></tr>';
       return;
     }
-    history.forEach(r => {
+    history.forEach((r, idx) => {
       const hasBalance = parseFloat(r.balance_amount) > 0;
       const paidAmount = parseFloat(r.paid_amount || 0);
       const balanceAmount = parseFloat(r.balance_amount || 0);
@@ -164,8 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tbody.innerHTML += `
         <tr>
+          <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${idx + 1}</td>
           <td>${date}</td>
-          <td><strong style="color:var(--primary-color)">#${r.receipt_id}</strong></td>
+          <td><strong style="color:var(--primary-color)">#${idx + 1}</strong></td>
           <td>${escapeHtml(r.material_name || '-')}</td>
           <td><strong>${r.quantity || 0} ${escapeHtml(r.unit || '')}</strong></td>
           <td>₹${parseFloat(r.total_amount || 0).toFixed(2)}</td>
@@ -209,78 +217,127 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
- function closeHistoryModal() {
- document.getElementById('history-modal').style.display = 'none';
- }
+  function closeHistoryModal() {
+    document.getElementById('history-modal').style.display = 'none';
+  }
 
- // Edit customer
- function openEditCust(id) {
- const c = allCustomers.find(x => x.id === id);
- if (!c) return;
- document.getElementById('edit-cust-id').value = c.id;
- document.getElementById('edit-cust-name').value = c.name;
- // Map legacy 'Direct Customer' to 'Retailer'
- const custType = c.customer_type === 'Direct Customer' ? 'Retailer' : (c.customer_type || 'Retailer');
- document.getElementById('edit-cust-type').value = custType;
- document.getElementById('edit-cust-phone').value = c.phone || '';
- document.getElementById('edit-cust-address').value = c.address || '';
- document.getElementById('edit-cust-alert').style.display = 'none';
- document.getElementById('edit-cust-modal').style.display = 'flex';
- }
+  // Payment Modal logic
+  function openPaymentModal(id, name, balance) {
+    if (balance <= 0) {
+      showToast(`Customer ${name} has no outstanding balance.`, 'info');
+      return;
+    }
+    document.getElementById('pay-cust-id').value = id;
+    document.getElementById('pay-cust-name').textContent = name;
+    document.getElementById('pay-cust-balance').textContent = `₹${parseFloat(balance).toFixed(2)}`;
+    document.getElementById('pay-amount').value = '';
+    document.getElementById('pay-amount').max = balance;
+    document.getElementById('pay-date').value = new Date().toLocaleString('sv').split(' ')[0];
+    document.getElementById('pay-remarks').value = 'Cash Payment';
+    document.getElementById('pay-alert').style.display = 'none';
+    document.getElementById('update-payment-modal').style.display = 'flex';
+  }
 
- function closeEditCustModal() {
- document.getElementById('edit-cust-modal').style.display = 'none';
- }
+  function closePaymentModal() {
+    document.getElementById('update-payment-modal').style.display = 'none';
+  }
 
- // Bind close/cancel listeners
- const closeHistBtn = document.getElementById('btn-close-history');
- if (closeHistBtn) closeHistBtn.addEventListener('click', closeHistoryModal);
+  const closePayBtn = document.getElementById('btn-close-payment');
+  if (closePayBtn) closePayBtn.addEventListener('click', closePaymentModal);
 
- const cancelHistBtn = document.getElementById('btn-cancel-history');
- if (cancelHistBtn) cancelHistBtn.addEventListener('click', closeHistoryModal);
+  const cancelPayBtn = document.getElementById('btn-cancel-payment');
+  if (cancelPayBtn) cancelPayBtn.addEventListener('click', closePaymentModal);
 
- const closeEditCustBtn = document.getElementById('btn-close-edit-cust');
- if (closeEditCustBtn) closeEditCustBtn.addEventListener('click', closeEditCustModal);
+  document.getElementById('update-payment-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    document.getElementById('pay-alert').style.display = 'none';
 
- const cancelEditCustBtn = document.getElementById('btn-cancel-edit-cust');
- if (cancelEditCustBtn) cancelEditCustBtn.addEventListener('click', closeEditCustModal);
+    const customer_id = parseInt(document.getElementById('pay-cust-id').value);
+    const amount = parseFloat(document.getElementById('pay-amount').value) || 0;
+    const date = document.getElementById('pay-date').value;
+    const remarks = document.getElementById('pay-remarks').value.trim();
 
- document.getElementById('edit-customer-form').addEventListener('submit', async (e) => {
- e.preventDefault();
- const id = parseInt(document.getElementById('edit-cust-id').value);
- const name = document.getElementById('edit-cust-name').value.trim();
- const customer_type = document.getElementById('edit-cust-type').value;
- const phone = document.getElementById('edit-cust-phone').value.trim();
- const address = document.getElementById('edit-cust-address').value.trim();
+    if (!amount || amount <= 0) return showAlert('pay-alert', 'Please enter a valid payment amount.');
+    if (!date) return showAlert('pay-alert', 'Please select a payment date.');
 
- if (!name) return showAlert('edit-cust-alert', 'Name is required.');
- if (phone && !/^[+\d\s\-()]{7,15}$/.test(phone)) return showAlert('edit-cust-alert', 'Enter a valid phone number.');
+    const res = await window.api.addCustomerPayment({ customer_id, amount, remarks, date });
+    if (res.success) {
+      showToast(' Outstanding payment updated successfully!');
+      closePaymentModal();
+      loadCustomers();
+    } else {
+      showAlert('pay-alert', res.error || 'Failed to process payment.');
+    }
+  });
 
- const result = await window.api.updateCustomer({ id, name, phone, address, customer_type });
- if (result.success) {
- showToast(' Customer updated!');
- closeEditCustModal();
- loadCustomers();
- } else {
- showAlert('edit-cust-alert', result.error || 'Update failed.');
- }
- });
+  // Edit customer
+  function openEditCust(id) {
+    const c = allCustomers.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('edit-cust-id').value = c.id;
+    document.getElementById('edit-cust-name').value = c.name;
+    // Map legacy 'Direct Customer' to 'Retailer'
+    const custType = c.customer_type === 'Direct Customer' ? 'Retailer' : (c.customer_type || 'Retailer');
+    document.getElementById('edit-cust-type').value = custType;
+    document.getElementById('edit-cust-phone').value = c.phone || '';
+    document.getElementById('edit-cust-address').value = c.address || '';
+    document.getElementById('edit-cust-alert').style.display = 'none';
+    document.getElementById('edit-cust-modal').style.display = 'flex';
+  }
 
- async function deleteCustomer(id, name) {
- const confirmed = confirm(`Are you sure you want to delete customer "${name}"?\n\nThis will soft-delete the customer record so reports remain intact.`);
- if (!confirmed) return;
- try {
- const result = await window.api.deleteCustomer(id);
- if (result.success) {
- showToast(` Customer "${name}" deleted successfully.`);
- loadCustomers();
- } else {
- showToast('Error deleting customer: ' + result.error, 'error');
- }
- } catch (err) {
- showToast('System error: ' + err.message, 'error');
- }
- }
- 
- loadCustomers();
+  function closeEditCustModal() {
+    document.getElementById('edit-cust-modal').style.display = 'none';
+  }
+
+  // Bind close/cancel listeners
+  const closeHistBtn = document.getElementById('btn-close-history');
+  if (closeHistBtn) closeHistBtn.addEventListener('click', closeHistoryModal);
+
+  const cancelHistBtn = document.getElementById('btn-cancel-history');
+  if (cancelHistBtn) cancelHistBtn.addEventListener('click', closeHistoryModal);
+
+  const closeEditCustBtn = document.getElementById('btn-close-edit-cust');
+  if (closeEditCustBtn) closeEditCustBtn.addEventListener('click', closeEditCustModal);
+
+  const cancelEditCustBtn = document.getElementById('btn-cancel-edit-cust');
+  if (cancelEditCustBtn) cancelEditCustBtn.addEventListener('click', closeEditCustModal);
+
+  document.getElementById('edit-customer-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = parseInt(document.getElementById('edit-cust-id').value);
+    const name = document.getElementById('edit-cust-name').value.trim();
+    const customer_type = document.getElementById('edit-cust-type').value;
+    const phone = document.getElementById('edit-cust-phone').value.trim();
+    const address = document.getElementById('edit-cust-address').value.trim();
+
+    if (!name) return showAlert('edit-cust-alert', 'Name is required.');
+    if (phone && !/^[+\d\s\-()]{7,15}$/.test(phone)) return showAlert('edit-cust-alert', 'Enter a valid phone number.');
+
+    const result = await window.api.updateCustomer({ id, name, phone, address, customer_type });
+    if (result.success) {
+      showToast(' Customer updated!');
+      closeEditCustModal();
+      loadCustomers();
+    } else {
+      showAlert('edit-cust-alert', result.error || 'Update failed.');
+    }
+  });
+
+  async function deleteCustomer(id, name) {
+    const confirmed = confirm(`Are you sure you want to delete customer "${name}"?\n\nThis will soft-delete the customer record so reports remain intact.`);
+    if (!confirmed) return;
+    try {
+      const result = await window.api.deleteCustomer(id);
+      if (result.success) {
+        showToast(` Customer "${name}" deleted successfully.`);
+        loadCustomers();
+      } else {
+        showToast('Error deleting customer: ' + result.error, 'error');
+      }
+    } catch (err) {
+      showToast('System error: ' + err.message, 'error');
+    }
+  }
+  
+  loadCustomers();
 });

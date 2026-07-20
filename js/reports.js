@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Format category to readable text
   function formatCategoryName(val) {
+    if (val === 'product') return 'Product / Stock';
     if (val === 'vehicle') return 'Vehicle / Logistics';
     if (val === 'personal') return 'Personal / Admin';
     return escapeHtml(val);
@@ -235,6 +236,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
     } else if (reportType === 'expenses') {
       cardsHtml = `
+        <div class="card card-accent-green">
+          <div>
+            <div class="card-title">Product / Stock Total</div>
+            <div class="card-value">₹${parseFloat(summary.productTotal || 0).toFixed(2)}</div>
+          </div>
+          <div class="card-subtitle">Dalmia Cement, Chettinad Cement, Crusher</div>
+        </div>
         <div class="card card-accent-orange">
           <div>
             <div class="card-title">Vehicle / Logistics Total</div>
@@ -319,7 +327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     reportTitle.textContent = titles[reportType] || 'Report';
 
     // Build head
-    let headHtml = '<tr>';
+    let headHtml = '<tr><th>S.No</th>';
     config.forEach(col => {
       headHtml += `<th>${escapeHtml(col.label)}</th>`;
     });
@@ -328,13 +336,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Build body
     let bodyHtml = '';
-    rows.forEach(row => {
-      bodyHtml += '<tr>';
+    rows.forEach((row, rowIndex) => {
+      bodyHtml += `<tr><td style="color:var(--text-muted);font-size:12px;font-weight:600;">${rowIndex + 1}</td>`;
       config.forEach(col => {
         let val = row[col.key];
         let tdContent = '';
 
-        if (col.format === 'currency') {
+        if (col.key === 'receipt_number') {
+          tdContent = `<strong style="color:var(--primary-color)">#${rowIndex + 1}</strong>`;
+        } else if (col.format === 'currency') {
           tdContent = `<strong>₹${parseFloat(val || 0).toFixed(2)}</strong>`;
         } else if (col.format === 'balanceCurrency') {
           const num = parseFloat(val || 0);

@@ -145,6 +145,30 @@ ipcMain.handle('auth:logout', async () => {
  return { success: true };
 });
 
+ipcMain.handle('auth:register', async (event, { name, username, password }) => {
+  try {
+    if (!name || !name.trim()) return { success: false, error: 'Full name is required.' };
+    if (!username || !username.trim()) return { success: false, error: 'Username is required.' };
+    if (!password || password.length < 4) return { success: false, error: 'Password must be at least 4 characters long.' };
+
+    const trimmedUsername = username.trim().toLowerCase();
+    const existing = await db.queryOne('SELECT id FROM users WHERE LOWER(username) = ?', [trimmedUsername]);
+    if (existing) {
+      return { success: false, error: 'Username already exists. Please choose another.' };
+    }
+
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    const result = await db.run(
+      'INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)',
+      [name.trim(), trimmedUsername, hashedPassword, 'admin']
+    );
+
+    return { success: true, id: result.lastInsertRowid };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
 ipcMain.handle('auth:getSession', async () => currentUserSession);
 
 // =============================================================
@@ -704,6 +728,95 @@ ipcMain.handle('db:addPayment', async (event, { receipt_id, amount, remarks, dat
 
       // Regenerate PDF
       await generateReceiptPDF(receipt_id);
+
+      return { success: true };
+    } catch (e) {
+      await db.run('ROLLBACK');
+      throw e;
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('db:addCustomerPayment', async (event, { customer_id, amount, remarks, date }) => {
+  try {
+    if (!customer_id) return { success: false, error: 'Invalid customer ID.' };
+
+    let validAmount;
+    try {
+      validAmount = validateFiniteNumber(amount, 0.01, 'Payment amount');
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+
+    const customer = await db.queryOne('SELECT * FROM customers WHERE id = ? AND (is_deleted IS NULL OR is_deleted = 0)', [customer_id]);
+    if (!customer) return { success: false, error: 'Customer not found.' };
+
+    const currentBalance = Math.round(((customer.balance_amount || 0) + Number.EPSILON) * 100) / 100;
+    if (currentBalance <= 0) {
+      return { success: false, error: 'Customer has no outstanding balance to pay.' };
+    }
+    if (validAmount > currentBalance) {
+      return { success: false, error: `Payment amount (₹${validAmount.toFixed(2)}) exceeds outstanding balance (₹${currentBalance.toFixed(2)}).` };
+    }
+
+    const timestamp = getLocalISOString(date);
+    const now = getLocalISOString();
+
+    const unpaidReceipts = await db.query(
+      `SELECT * FROM receipts 
+       WHERE customer_id = ? AND balance_amount > 0 AND (is_deleted IS NULL OR is_deleted = 0)
+       ORDER BY COALESCE(receipt_date, created_at) ASC, id ASC`,
+      [customer_id]
+    );
+
+    await db.run('BEGIN TRANSACTION');
+    try {
+      let remainingPayment = validAmount;
+      const updatedReceiptIds = [];
+
+      for (const r of unpaidReceipts) {
+        if (remainingPayment <= 0) break;
+        const recBalance = Math.round(((r.balance_amount || 0) + Number.EPSILON) * 100) / 100;
+        const toApply = Math.round((Math.min(remainingPayment, recBalance) + Number.EPSILON) * 100) / 100;
+
+        await db.run(
+          `INSERT INTO payments (receipt_id, payment_date, amount, remarks, created_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          [r.id, timestamp, toApply, remarks || 'Customer outstanding payment', now]
+        );
+
+        const newPaid = Math.round(((r.paid_amount + toApply) + Number.EPSILON) * 100) / 100;
+        const newBalance = Math.round(((r.total_amount - newPaid) + Number.EPSILON) * 100) / 100;
+        await db.run(
+          'UPDATE receipts SET paid_amount = ?, balance_amount = ?, updated_at = ? WHERE id = ?',
+          [newPaid, newBalance, now, r.id]
+        );
+
+        updatedReceiptIds.push(r.id);
+        remainingPayment = Math.round(((remainingPayment - toApply) + Number.EPSILON) * 100) / 100;
+      }
+
+      // Recalculate customer total balance from receipts or direct deduction
+      const custReceipts = await db.query(
+        'SELECT SUM(balance_amount) as total_balance FROM receipts WHERE customer_id = ? AND (is_deleted IS NULL OR is_deleted = 0)',
+        [customer_id]
+      );
+      let newCustBalance = custReceipts[0]?.total_balance;
+      if (newCustBalance === null || newCustBalance === undefined) {
+        newCustBalance = Math.max(0, currentBalance - validAmount);
+      } else {
+        newCustBalance = Math.round(((newCustBalance) + Number.EPSILON) * 100) / 100;
+      }
+      await db.run('UPDATE customers SET balance_amount = ? WHERE id = ?', [newCustBalance, customer_id]);
+
+      await db.run('COMMIT');
+
+      // Regenerate PDFs for affected receipts asynchronously
+      for (const rId of updatedReceiptIds) {
+        try { await generateReceiptPDF(rId); } catch (err) { console.error('Error generating PDF for receipt:', rId, err); }
+      }
 
       return { success: true };
     } catch (e) {

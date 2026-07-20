@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   // Auth
   login: (username, password) => ipcRenderer.invoke('auth:login', { username, password }),
+  register: (name, username, password) => ipcRenderer.invoke('auth:register', { name, username, password }),
   logout: () => ipcRenderer.invoke('auth:logout'),
   getSession: () => ipcRenderer.invoke('auth:getSession'),
 
@@ -23,6 +24,7 @@ contextBridge.exposeInMainWorld('api', {
   addCustomer: (data) => ipcRenderer.invoke('db:addCustomer', data),
   updateCustomer: (data) => ipcRenderer.invoke('db:updateCustomer', data),
   getCustomerHistory: (customerId) => ipcRenderer.invoke('db:getCustomerHistory', customerId),
+  addCustomerPayment: (data) => ipcRenderer.invoke('db:addCustomerPayment', data),
 
   // Receipts
   getReceipts: (filters) => ipcRenderer.invoke('db:getReceipts', filters),

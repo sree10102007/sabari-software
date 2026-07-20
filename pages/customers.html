@@ -84,75 +84,112 @@
  </div>
  </div>
  <div style="overflow-x:auto;max-height:calc(100vh - 280px);overflow-y:auto;">
- <table class="data-table" id="customers-table">
- <thead>
- <tr><th>Name</th><th>Customer Type</th><th>Phone</th><th>Address</th><th>Last Sale Date</th><th>Total Purchases (₹)</th><th>Balance Outstanding (₹)</th><th class="actions-col">Actions</th></tr>
- </thead>
- <tbody id="customers-table-body">
- <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading customers...</td></tr>
- </tbody>
- </table>
- </div>
- </div>
- </div>
- </div>
- </main>
- </div>
-
- <!-- CUSTOMER HISTORY MODAL -->
- <!-- CUSTOMER HISTORY MODAL -->
- <div class="modal-backdrop" id="history-modal">
- <div class="modal-content" style="max-width:900px;">
- <div class="modal-header">
- <h3 id="history-modal-title"> Customer History</h3>
- <button type="button" class="modal-close" id="btn-close-history">×</button>
- </div>
- <div class="modal-body">
- <div id="history-modal-body" style="max-height:400px;overflow-y:auto;">
- <table class="data-table">
- <thead><tr><th>Date</th><th>Receipt ID</th><th>Material/Product</th><th>Quantity</th><th>Total Amount</th><th>Paid Amount</th><th>Balance Amount</th><th>Payment Status</th><th>Actions</th></tr></thead>
- <tbody id="history-table-body">
- <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
- </tbody>
- </table>
- </div>
- <div class="btn-group" style="justify-content:flex-end;margin-top:16px;">
- <button type="button" class="btn btn-secondary" id="btn-cancel-history">Close</button>
- </div>
- </div>
- </div>
- </div>
-
- <!-- EDIT CUSTOMER MODAL -->
- <div class="modal-backdrop" id="edit-cust-modal">
- <div class="modal-content" style="max-width:440px;">
- <div class="modal-header">
- <h3> Edit Customer</h3>
- <button type="button" class="modal-close" id="btn-close-edit-cust">×</button>
- </div>
- <div class="modal-body">
- <form id="edit-customer-form">
- <input type="hidden" id="edit-cust-id">
- <div class="form-group"><label>Customer Name *</label><input type="text" id="edit-cust-name" class="form-control" required></div>
- <div class="form-group">
-  <label>Customer Type *</label>
-  <select id="edit-cust-type" class="form-control" required>
-  <option value="">-- Select Customer Type --</option>
-  <option value="Retailer">Retailer</option>
-  <option value="Engineer">Engineer</option>
-  </select>
+  <table class="data-table" id="customers-table">
+  <thead>
+  <tr><th>S.No</th><th>Name</th><th>Customer Type</th><th>Phone</th><th>Address</th><th>Last Sale Date</th><th>Total Purchases (₹)</th><th>Balance Outstanding (₹)</th><th class="actions-col">Actions</th></tr>
+  </thead>
+  <tbody id="customers-table-body">
+  <tr><td colspan="9" style="text-align:center;color:var(--text-muted);">Loading customers...</td></tr>
+  </tbody>
+  </table>
   </div>
- <div class="form-group"><label>Phone Number</label><input type="tel" id="edit-cust-phone" class="form-control"></div>
- <div class="form-group"><label>Address</label><textarea id="edit-cust-address" class="form-control" style="min-height:80px;"></textarea></div>
- <div id="edit-cust-alert" style="display:none;padding:10px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
- <div class="btn-group" style="justify-content:flex-end;">
- <button type="button" class="btn btn-secondary" id="btn-cancel-edit-cust">Cancel</button>
- <button type="submit" class="btn btn-primary"> Save</button>
- </div>
- </form>
- </div>
- </div>
- </div>
+  </div>
+  </div>
+  </div>
+  </main>
+  </div>
+
+  <!-- CUSTOMER HISTORY MODAL -->
+  <div class="modal-backdrop" id="history-modal">
+  <div class="modal-content" style="max-width:900px;">
+  <div class="modal-header">
+  <h3 id="history-modal-title"> Customer History</h3>
+  <button type="button" class="modal-close" id="btn-close-history">×</button>
+  </div>
+  <div class="modal-body">
+  <div id="history-modal-body" style="max-height:400px;overflow-y:auto;">
+  <table class="data-table">
+  <thead><tr><th>S.No</th><th>Date</th><th>Receipt ID</th><th>Material/Product</th><th>Quantity</th><th>Total Amount</th><th>Paid Amount</th><th>Balance Amount</th><th>Payment Status</th><th>Actions</th></tr></thead>
+  <tbody id="history-table-body">
+  <tr><td colspan="10" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
+  </tbody>
+  </table>
+  </div>
+  <div class="btn-group" style="justify-content:flex-end;margin-top:16px;">
+  <button type="button" class="btn btn-secondary" id="btn-cancel-history">Close</button>
+  </div>
+  </div>
+  </div>
+  </div>
+
+  <!-- EDIT CUSTOMER MODAL -->
+  <div class="modal-backdrop" id="edit-cust-modal">
+  <div class="modal-content" style="max-width:440px;">
+  <div class="modal-header">
+  <h3> Edit Customer</h3>
+  <button type="button" class="modal-close" id="btn-close-edit-cust">×</button>
+  </div>
+  <div class="modal-body">
+  <form id="edit-customer-form">
+  <input type="hidden" id="edit-cust-id">
+  <div class="form-group"><label>Customer Name *</label><input type="text" id="edit-cust-name" class="form-control" required></div>
+  <div class="form-group">
+   <label>Customer Type *</label>
+   <select id="edit-cust-type" class="form-control" required>
+   <option value="">-- Select Customer Type --</option>
+   <option value="Retailer">Retailer</option>
+   <option value="Engineer">Engineer</option>
+   </select>
+   </div>
+  <div class="form-group"><label>Phone Number</label><input type="tel" id="edit-cust-phone" class="form-control"></div>
+  <div class="form-group"><label>Address</label><textarea id="edit-cust-address" class="form-control" style="min-height:80px;"></textarea></div>
+  <div id="edit-cust-alert" style="display:none;padding:10px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
+  <div class="btn-group" style="justify-content:flex-end;">
+  <button type="button" class="btn btn-secondary" id="btn-cancel-edit-cust">Cancel</button>
+  <button type="submit" class="btn btn-primary"> Save</button>
+  </div>
+  </form>
+  </div>
+  </div>
+  </div>
+
+  <!-- UPDATE PAYMENT MODAL -->
+  <div class="modal-backdrop" id="update-payment-modal">
+  <div class="modal-content" style="max-width:440px;">
+  <div class="modal-header">
+  <h3> Update Outstanding Payment</h3>
+  <button type="button" class="modal-close" id="btn-close-payment">×</button>
+  </div>
+  <div class="modal-body">
+  <form id="update-payment-form">
+  <input type="hidden" id="pay-cust-id">
+  <div style="background:var(--bg-secondary, #f8f9fa);padding:12px;border-radius:var(--border-radius-md);margin-bottom:16px;">
+    <div style="font-size:13px;color:var(--text-muted);">Customer Name</div>
+    <div style="font-size:16px;font-weight:700;" id="pay-cust-name">-</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-top:6px;">Current Outstanding Balance</div>
+    <div style="font-size:18px;font-weight:800;color:var(--danger-color);" id="pay-cust-balance">₹0.00</div>
+  </div>
+  <div class="form-group">
+    <label>Payment Amount (₹) *</label>
+    <input type="number" id="pay-amount" class="form-control" placeholder="0.00" min="0.01" step="0.01" required>
+  </div>
+  <div class="form-group">
+    <label>Payment Date *</label>
+    <input type="date" id="pay-date" class="form-control" required>
+  </div>
+  <div class="form-group">
+    <label>Remarks / Payment Method</label>
+    <input type="text" id="pay-remarks" class="form-control" placeholder="e.g. Cash, UPI, GPay, Bank Transfer...">
+  </div>
+  <div id="pay-alert" style="display:none;padding:10px;margin-bottom:12px;border-radius:var(--border-radius-md);font-weight:600;font-size:13px;"></div>
+  <div class="btn-group" style="justify-content:flex-end;">
+  <button type="button" class="btn btn-secondary" id="btn-cancel-payment">Cancel</button>
+  <button type="submit" class="btn btn-primary"> Update Payment</button>
+  </div>
+  </form>
+  </div>
+  </div>
+  </div>
 
  <div id="toast" class="notification"></div>
  <script src="../js/common.js"></script>

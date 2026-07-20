@@ -82,11 +82,11 @@ document.addEventListener('DOMContentLoaded', async () => {
  function renderMovements(movements) {
  tableBody.innerHTML = '';
  if (movements.length === 0) {
- tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">No stock movements found matching filters.</td></tr>`;
+ tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);">No stock movements found matching filters.</td></tr>`;
  return;
  }
 
- movements.forEach(m => {
+ movements.forEach((m, idx) => {
  const tr = document.createElement('tr');
  const date = new Date(m.created_at).toLocaleString('en-IN');
 
@@ -112,6 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  }
 
  tr.innerHTML = `
+ <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${idx + 1}</td>
  <td>${date}</td>
  <td><strong>${escapeHtml(m.material_name)}</strong></td>
  <td><span class="status-badge ${typeClass}">${m.movement_type}</span></td>

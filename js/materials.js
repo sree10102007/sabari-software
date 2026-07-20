@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
  
  const tr = document.createElement('tr');
  tr.innerHTML = `
- <td style="color:var(--text-muted);font-size:12px;">${m.id}</td>
+ <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${i + 1}</td>
  <td><strong>${escapeHtml(m.name)}</strong></td>
  <td>${escapeHtml(m.category || '-')}</td>
  <td>${escapeHtml(m.unit)}</td>

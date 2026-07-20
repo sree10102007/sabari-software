@@ -136,10 +136,10 @@ document.addEventListener('DOMContentLoaded', async () => {
  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No receipts yet.</td></tr>';
  return;
  }
- receipts.slice(0, 8).forEach(r => {
+ receipts.slice(0, 8).forEach((r, idx) => {
  tbody.innerHTML += `
  <tr>
- <td><strong style="color:var(--primary-color)">${r.id}</strong></td>
+ <td><strong style="color:var(--primary-color)">#${idx + 1}</strong></td>
  <td>${escapeHtml(r.customer_name || '-')}</td>
  <td><strong>₹${parseFloat(r.total_amount || 0).toFixed(2)}</strong></td>
  <td style="font-size:12px;">${new Date(r.created_at).toLocaleDateString('en-IN')}</td>

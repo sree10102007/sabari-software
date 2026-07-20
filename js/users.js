@@ -45,16 +45,16 @@ document.addEventListener('DOMContentLoaded', async () => {
  return;
  }
 
- users.forEach(u => {
- const tr = document.createElement('tr');
- 
- let roleBadgeClass = 'pending';
- if (u.role === 'admin') roleBadgeClass = 'low-stock'; // Red/Orange-ish
- if (u.role === 'retailer') roleBadgeClass = 'available'; // Green
+ users.forEach((u, i) => {
+  const tr = document.createElement('tr');
+  
+  let roleBadgeClass = 'pending';
+  if (u.role === 'admin') roleBadgeClass = 'low-stock'; // Red/Orange-ish
+  if (u.role === 'retailer') roleBadgeClass = 'available'; // Green
 
- tr.innerHTML = `
- <td><strong>#USR-${u.id}</strong></td>
- <td><strong>${escapeHtml(u.name)}</strong></td>
+  tr.innerHTML = `
+  <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${i + 1}</td>
+  <td><strong>${escapeHtml(u.name)}</strong></td>
  <td><code>${escapeHtml(u.username)}</code></td>
  <td><span class="status-badge ${roleBadgeClass}">${u.role.toUpperCase()}</span></td>
  `;

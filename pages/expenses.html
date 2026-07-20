@@ -86,9 +86,18 @@
                   <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Category *</label>
                   <select id="exp-category" class="form-control" required>
                     <option value="">-- Select Category --</option>
+                    <option value="product">Product / Stock</option>
                     <option value="vehicle">Vehicle / Logistics</option>
                     <option value="personal">Personal / Admin</option>
                   </select>
+                </div>
+
+                <!-- Product / Stock Details Panel -->
+                <div id="panel-product" style="display: none;">
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Supplier / Mill / Details</label>
+                    <input type="text" id="exp-supplier-name" class="form-control" placeholder="e.g. Dalmia Plant, Local Quarry...">
+                  </div>
                 </div>
 
                 <!-- Vehicle Details Panel -->
@@ -143,6 +152,31 @@
             </div>
           </div>
 
+          <!-- PRODUCT / STOCK EXPENSES TABLE -->
+          <div class="card product-expense-card table-container">
+            <div class="table-header">
+              <h3 style="font-family:'Outfit';font-size:16px;">Product / Stock Expenses</h3>
+            </div>
+            <div style="max-height: 280px; overflow-y: auto; overflow-x: auto; width: 100%;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>S.No</th>
+                    <th>Date</th>
+                    <th>Expense Type</th>
+                    <th>Supplier / Details</th>
+                    <th>Amount (₹)</th>
+                    <th>Remarks</th>
+                    <th class="actions-col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="product-expenses-body">
+                  <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading product / stock expenses...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- VEHICLE / LOGISTICS EXPENSES TABLE -->
           <div class="card vehicle-expense-card table-container">
             <div class="table-header">
@@ -152,6 +186,7 @@
               <table class="data-table">
                 <thead>
                   <tr>
+                    <th>S.No</th>
                     <th>Date</th>
                     <th>Vehicle Number</th>
                     <th>Expense Type</th>
@@ -161,7 +196,7 @@
                   </tr>
                 </thead>
                 <tbody id="vehicle-expenses-body">
-                  <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading vehicle expenses...</td></tr>
+                  <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading vehicle expenses...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -176,6 +211,7 @@
               <table class="data-table">
                 <thead>
                   <tr>
+                    <th>S.No</th>
                     <th>Date</th>
                     <th>Person Name</th>
                     <th>Expense Type</th>
@@ -185,7 +221,7 @@
                   </tr>
                 </thead>
                 <tbody id="personal-expenses-body">
-                  <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading personal expenses...</td></tr>
+                  <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading personal expenses...</td></tr>
                 </tbody>
               </table>
             </div>

@@ -135,12 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const tbody = document.getElementById('recent-stock-out-body');
       tbody.innerHTML = '';
       if (!outMovements.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No sales recorded yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No sales recorded yet.</td></tr>';
         return;
       }
-      outMovements.slice(0, 15).forEach(m => {
+      outMovements.slice(0, 15).forEach((m, idx) => {
         tbody.innerHTML += `
         <tr>
+        <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${idx + 1}</td>
         <td style="font-size:12px;">${new Date(m.created_at).toLocaleDateString('en-IN')}</td>
         <td><strong>${escapeHtml(m.material_name)}</strong></td>
         <td style="color:var(--danger-color);font-weight:600;">-${m.quantity} ${escapeHtml(m.material_unit)}</td>

@@ -45,13 +45,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const personalExpensesBody = document.getElementById('personal-expenses-body');
 
   // Panels
+  const panelProduct = document.getElementById('panel-product');
+  const expSupplierName = document.getElementById('exp-supplier-name');
+  
   const panelVehicle = document.getElementById('panel-vehicle');
   const expVehicleNumber = document.getElementById('exp-vehicle-number');
   
   const panelPersonal = document.getElementById('panel-personal');
   const expPersonName = document.getElementById('exp-person-name');
 
+  const productExpensesBody = document.getElementById('product-expenses-body');
+
   // Types definitions
+  const productTypes = ['Dalmia Cement', 'Chettinad Cement', 'Crusher', 'Other'];
   const vehicleTypes = ['Fuel', 'Driver Allowance', 'Toll Charges', 'Maintenance', 'Loading / Unloading', 'Other'];
   const personalTypes = ['Worker Pay', 'Tea / Snacks', 'Refreshments', 'Office Expense', 'Salary / Allowance', 'Other'];
 
@@ -80,11 +86,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     expType.disabled = false;
     expType.innerHTML = '<option value="">-- Select Type --</option>';
 
-    if (cat === 'vehicle') {
+    if (cat === 'product') {
+      panelProduct.style.display = 'block';
+      panelVehicle.style.display = 'none';
+      panelPersonal.style.display = 'none';
+
+      expVehicleNumber.required = false;
+      expPersonName.required = false;
+      expVehicleNumber.value = '';
+      expPersonName.value = '';
+
+      productTypes.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        expType.appendChild(opt);
+      });
+    } else if (cat === 'vehicle') {
+      panelProduct.style.display = 'none';
       panelVehicle.style.display = 'block';
       panelPersonal.style.display = 'none';
+
       expVehicleNumber.required = true;
       expPersonName.required = false;
+      expSupplierName.value = '';
       expPersonName.value = '';
 
       vehicleTypes.forEach(t => {
@@ -94,10 +119,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         expType.appendChild(opt);
       });
     } else if (cat === 'personal') {
+      panelProduct.style.display = 'none';
       panelVehicle.style.display = 'none';
       panelPersonal.style.display = 'block';
+
       expVehicleNumber.required = false;
       expVehicleNumber.value = '';
+      expSupplierName.value = '';
       expPersonName.required = true;
 
       personalTypes.forEach(t => {
@@ -107,10 +135,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         expType.appendChild(opt);
       });
     } else {
+      panelProduct.style.display = 'none';
       panelVehicle.style.display = 'none';
       panelPersonal.style.display = 'none';
       expVehicleNumber.required = false;
       expPersonName.required = false;
+      expSupplierName.value = '';
       expVehicleNumber.value = '';
       expPersonName.value = '';
       
@@ -130,22 +160,54 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderHistoryLog(items) {
+    if (productExpensesBody) productExpensesBody.innerHTML = '';
     vehicleExpensesBody.innerHTML = '';
     personalExpensesBody.innerHTML = '';
 
+    const productItems = items.filter(i => i.expense_category === 'product');
     const vehicleItems = items.filter(i => i.expense_category === 'vehicle');
     const personalItems = items.filter(i => i.expense_category === 'personal');
 
+    // Render Product / Stock Expenses
+    if (productExpensesBody) {
+      if (productItems.length === 0) {
+        productExpensesBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No product / stock expenses found.</td></tr>';
+      } else {
+        productItems.forEach((item, idx) => {
+          const tr = document.createElement('tr');
+          const d = new Date(item.expense_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          tr.innerHTML = `
+            <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${idx + 1}</td>
+            <td>${d}</td>
+            <td><strong>${escapeHtml(item.expense_type)}</strong></td>
+            <td>${escapeHtml(item.person_name || item.vehicle_number || '-')}</td>
+            <td><strong>${formatCurrency(item.amount)}</strong></td>
+            <td>${escapeHtml(item.remarks || '-')}</td>
+            <td class="actions-col">
+              <div class="table-actions">
+                <button class="btn btn-action btn-edit btn-edit-exp" data-id="${item.id}">Edit</button>
+                <button class="btn btn-action btn-delete btn-delete-exp" data-id="${item.id}">Delete</button>
+              </div>
+            </td>
+          `;
+          tr.querySelector('.btn-edit-exp').addEventListener('click', () => populateEditForm(item));
+          tr.querySelector('.btn-delete-exp').addEventListener('click', () => handleDeleteExpense(item.id));
+          productExpensesBody.appendChild(tr);
+        });
+      }
+    }
+
     // Render Vehicle Expenses
     if (vehicleItems.length === 0) {
-      vehicleExpensesBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No vehicle expenses found.</td></tr>';
+      vehicleExpensesBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No vehicle expenses found.</td></tr>';
     } else {
-      vehicleItems.forEach(item => {
+      vehicleItems.forEach((item, idx) => {
         const tr = document.createElement('tr');
         const d = new Date(item.expense_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         tr.innerHTML = `
+          <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${idx + 1}</td>
           <td>${d}</td>
-          <td><strong>${escapeHtml(item.vehicle_number)}</strong></td>
+          <td><strong>${escapeHtml(item.vehicle_number || '-')}</strong></td>
           <td>${escapeHtml(item.expense_type)}</td>
           <td><strong>${formatCurrency(item.amount)}</strong></td>
           <td>${escapeHtml(item.remarks || '-')}</td>
@@ -164,14 +226,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Render Personal Expenses
     if (personalItems.length === 0) {
-      personalExpensesBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No personal expenses found.</td></tr>';
+      personalExpensesBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No personal expenses found.</td></tr>';
     } else {
-      personalItems.forEach(item => {
+      personalItems.forEach((item, idx) => {
         const tr = document.createElement('tr');
         const d = new Date(item.expense_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         tr.innerHTML = `
+          <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${idx + 1}</td>
           <td>${d}</td>
-          <td><strong>${escapeHtml(item.person_name)}</strong></td>
+          <td><strong>${escapeHtml(item.person_name || '-')}</strong></td>
           <td>${escapeHtml(item.expense_type)}</td>
           <td><strong>${formatCurrency(item.amount)}</strong></td>
           <td>${escapeHtml(item.remarks || '-')}</td>
@@ -242,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       expense_category: category,
       expense_date: date,
       vehicle_number: category === 'vehicle' ? expVehicleNumber.value.trim().toUpperCase() : null,
-      person_name: category === 'personal' ? expPersonName.value : null,
+      person_name: category === 'personal' ? expPersonName.value : (category === 'product' ? expSupplierName.value.trim() : null),
       expense_type: type,
       amount,
       remarks
@@ -257,8 +320,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       showToast('Person name is required.', 'error');
       return;
     }
-
-    console.log('[DEBUG expenses.js] raw input:', expAmount.value, '| parsed amount:', amount, typeof amount);
 
     try {
       let res;
@@ -306,12 +367,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     handleCategoryChange();
 
     expType.value = item.expense_type;
-    // Load amount cleanly — round to 2 decimal places to fix any SQLite REAL precision artifacts
     expAmount.value = (Math.round(parseFloat(item.amount || 0) * 100) / 100).toFixed(2);
     expRemarks.value = item.remarks || '';
 
     if (item.expense_category === 'vehicle') {
       expVehicleNumber.value = item.vehicle_number || '';
+    } else if (item.expense_category === 'product') {
+      expSupplierName.value = item.person_name || '';
     } else {
       expPersonName.value = item.person_name || '';
     }
@@ -328,6 +390,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     expenseId.value = '';
     expDate.value = new Date().toLocaleString('sv').split(' ')[0];
     
+    panelProduct.style.display = 'none';
     panelVehicle.style.display = 'none';
     panelPersonal.style.display = 'none';
     expVehicleNumber.required = false;

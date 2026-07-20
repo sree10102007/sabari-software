@@ -68,15 +68,14 @@ document.addEventListener('DOMContentLoaded', async () => {
  return;
  }
 
- receipts.forEach(r => {
+ receipts.forEach((r, index) => {
  const tr = document.createElement('tr');
  const date = new Date(r.receipt_date || r.created_at).toLocaleDateString('en-IN', {
  day: '2-digit', month: '2-digit', year: 'numeric'
  });
 
- const hasPdf = !!r.pdf_path;
- const pdfBadge = hasPdf 
- ? `<span class="status-badge approved" style="cursor:pointer;" title="${escapeHtml(r.pdf_path)}"> Ready</span>`
+ const pdfBadge = r.pdf_path
+ ? `<span class="status-badge available" style="cursor:pointer;" onclick="window.viewReceiptPdf('${r.id}', '${escapeHtml(r.pdf_path)}')"> PDF</span>`
  : `<span class="status-badge pending"> Missing</span>`;
 
  // Format products purchased
@@ -99,7 +98,8 @@ document.addEventListener('DOMContentLoaded', async () => {
  }
 
  tr.innerHTML = `
- <td><strong class="receipt-link" style="cursor:pointer;color:var(--primary-color);" data-id="${r.id}">#${r.id}</strong></td>
+ <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${index + 1}</td>
+ <td><strong class="receipt-link" style="cursor:pointer;color:var(--primary-color);" data-id="${r.id}">#${index + 1}</strong></td>
  <td>${date}</td>
  <td><strong>${escapeHtml(r.customer_name)}</strong></td>
  <td>${escapeHtml(r.customer_phone || '-')}</td>

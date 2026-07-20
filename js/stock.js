@@ -45,19 +45,20 @@ document.addEventListener('DOMContentLoaded', () => {
  const movements = await window.api.getStockMovements({ movement_type: 'Stock In' });
  const tbody = document.getElementById('recent-stock-in-body');
  tbody.innerHTML = '';
- if (!movements.length) {
- tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No stock entries yet.</td></tr>';
- return;
- }
- movements.slice(0, 15).forEach(m => {
- tbody.innerHTML += `
- <tr>
- <td style="font-size:12px;">${new Date(m.created_at).toLocaleDateString('en-IN')}</td>
- <td><strong>${escapeHtml(m.material_name)}</strong></td>
- <td style="color:var(--success-color);font-weight:600;">+${m.quantity} ${escapeHtml(m.material_unit)}</td>
- <td style="font-size:12px;">${escapeHtml(m.supplier_name || '-')}</td>
- </tr>`;
- });
+  if (!movements.length) {
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No stock entries yet.</td></tr>';
+  return;
+  }
+  movements.slice(0, 15).forEach((m, idx) => {
+  tbody.innerHTML += `
+  <tr>
+  <td style="color:var(--text-muted);font-size:12px;font-weight:600;">${idx + 1}</td>
+  <td style="font-size:12px;">${new Date(m.created_at).toLocaleDateString('en-IN')}</td>
+  <td><strong>${escapeHtml(m.material_name)}</strong></td>
+  <td style="color:var(--success-color);font-weight:600;">+${m.quantity} ${escapeHtml(m.material_unit)}</td>
+  <td style="font-size:12px;">${escapeHtml(m.supplier_name || '-')}</td>
+  </tr>`;
+  });
  }
 
  // Add stock form submit

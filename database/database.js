@@ -906,6 +906,7 @@ async function getExpenseReport(filters) {
 
   const expenseSum = await queryOne(`
     SELECT 
+      SUM(CASE WHEN expense_category = 'product' THEN amount ELSE 0 END) as product_total,
       SUM(CASE WHEN expense_category = 'vehicle' THEN amount ELSE 0 END) as vehicle_total,
       SUM(CASE WHEN expense_category = 'personal' THEN amount ELSE 0 END) as personal_total,
       SUM(amount) as total_expenses
@@ -916,6 +917,7 @@ async function getExpenseReport(filters) {
   return {
     rows: rows,
     summary: {
+      productTotal: expenseSum?.product_total || 0,
       vehicleTotal: expenseSum?.vehicle_total || 0,
       personalTotal: expenseSum?.personal_total || 0,
       totalExpenses: expenseSum?.total_expenses || 0
